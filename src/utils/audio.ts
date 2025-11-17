@@ -19,7 +19,7 @@ class AudioManager {
   private reverb: Tone.Reverb | null = null;
   private distortion: Tone.Distortion | null = null;
   private initialized = false;
-  private nightmareInterval: NodeJS.Timeout | null = null;
+  private nightmareInterval: number | null = null;
 
   async initialize() {
     if (this.initialized) return;
@@ -86,7 +86,8 @@ class AudioManager {
 
     this.synth.triggerAttackRelease(
       AUDIO_CONFIG.PING_FREQUENCY,
-      AUDIO_CONFIG.PING_DURATION * (1 + glitchIntensity)
+      AUDIO_CONFIG.PING_DURATION * (1 + glitchIntensity),
+      Tone.now()
     );
   }
 
@@ -108,7 +109,8 @@ class AudioManager {
 
     this.synth.triggerAttackRelease(
       frequency,
-      AUDIO_CONFIG.PING_DURATION * (1 + chaosLevel * 0.1)
+      AUDIO_CONFIG.PING_DURATION * (1 + chaosLevel * 0.1),
+      Tone.now()
     );
   }
 
