@@ -4,8 +4,10 @@ import { FallingCard } from './components/FallingCard';
 import { FloatingFragments } from './components/FloatingFragments';
 import { NightmareZone } from './components/NightmareZone';
 import { EndingModal } from './components/EndingModal';
+import { AudioInitializer } from './components/AudioInitializer';
 import { Phase } from './types';
 import { useGlitch } from './hooks/useGlitch';
+import { audioManager } from './utils/audio';
 
 const FALLING_DISTANCE = 2500;
 const PAGE_HEIGHT = 4000;
@@ -14,6 +16,12 @@ function App() {
   const [phase, setPhase] = useState<Phase>('board');
   const [scrollPosition, setScrollPosition] = useState(0);
   const [endingVariant, setEndingVariant] = useState<'complete' | 'leave'>('complete');
+  const [audioInitialized, setAudioInitialized] = useState(false);
+
+  const handleAudioInit = async () => {
+    await audioManager.initialize();
+    setAudioInitialized(true);
+  };
 
   const fallingTask = {
     id: '1',
@@ -33,6 +41,7 @@ function App() {
       if (window.scrollY >= FALLING_DISTANCE && phase === 'falling') {
         document.body.style.overflow = 'hidden';
         setPhase('ground');
+        audioManager.playGroundDrone();
 
         // Transition to nightmare after brief pause
         setTimeout(() => {
@@ -49,6 +58,13 @@ function App() {
     scrollPosition,
     FALLING_DISTANCE
   );
+
+  // Play falling audio as user scrolls
+  useEffect(() => {
+    if (phase === 'falling' && intensity > 0.1 && audioInitialized) {
+      audioManager.playFallingPing(intensity);
+    }
+  }, [Math.floor(scrollPosition / 200), audioInitialized]); // Trigger every 200px of scroll
 
   const handleTaskMovedToInProgress = () => {
     // Extend page height
@@ -78,12 +94,15 @@ function App() {
   };
 
   return (
-    <div
-      className="relative"
-      style={{
-        filter: phase === 'falling' ? `hue-rotate(${hueRotation}deg)` : undefined,
-      }}
-    >
+    <>
+      {!audioInitialized && <AudioInitializer onInitialize={handleAudioInit} />}
+
+      <div
+        className="relative"
+        style={{
+          filter: phase === 'falling' ? `hue-rotate(${hueRotation}deg)` : undefined,
+        }}
+      >
       {/* Phase 1: Board */}
       {phase === 'board' && (
         <TaskBoard onTaskMovedToInProgress={handleTaskMovedToInProgress} />
@@ -125,6 +144,12 @@ function App() {
         <NightmareZone
           onComplete={handleNightmareComplete}
           onLeave={handleNightmareLeave}
+          audio={{
+            playNightmarePing: audioManager.playNightmarePing.bind(audioManager),
+            startNightmarePings: audioManager.startNightmarePings.bind(audioManager),
+            stopNightmarePings: audioManager.stopNightmarePings.bind(audioManager),
+            playSlackKnock: audioManager.playSlackKnock.bind(audioManager),
+          }}
         />
       )}
 
@@ -132,7 +157,8 @@ function App() {
       {phase === 'ending' && (
         <EndingModal variant={endingVariant} onRestart={handleRestart} />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

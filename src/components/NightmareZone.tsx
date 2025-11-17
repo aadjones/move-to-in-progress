@@ -16,9 +16,15 @@ const CHAOS_THRESHOLDS = {
 interface NightmareZoneProps {
   onComplete: () => void;
   onLeave: () => void;
+  audio: {
+    playNightmarePing: (chaosLevel: number) => void;
+    startNightmarePings: (subtaskCount: number) => void;
+    stopNightmarePings: () => void;
+    playSlackKnock: () => void;
+  };
 }
 
-export const NightmareZone = ({ onComplete, onLeave }: NightmareZoneProps) => {
+export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps) => {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [cursorDrift, setCursorDrift] = useState(0);
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
@@ -109,9 +115,18 @@ export const NightmareZone = ({ onComplete, onLeave }: NightmareZoneProps) => {
     return () => clearInterval(autoExpandInterval);
   }, [totalSubtasks, subtasks]);
 
-  // Toast notifications at 15+
+  // Toast notifications with synchronized pings
   useEffect(() => {
-    if (totalSubtasks < CHAOS_THRESHOLDS.TOAST_SPAM) return;
+    if (totalSubtasks < CHAOS_THRESHOLDS.TOAST_SPAM) {
+      // Before toast spam, play background pings
+      if (totalSubtasks >= CHAOS_THRESHOLDS.CURSOR_DRIFT) {
+        audio.startNightmarePings(totalSubtasks);
+      }
+      return () => audio.stopNightmarePings();
+    }
+
+    // At 15+ subtasks, stop background pings and only ping with toasts
+    audio.stopNightmarePings();
 
     const toastInterval = setInterval(() => {
       const message =
@@ -119,12 +134,18 @@ export const NightmareZone = ({ onComplete, onLeave }: NightmareZoneProps) => {
       const newToast = { id: Date.now(), message };
       setToasts((prev) => [...prev, newToast]);
 
+      // Play Slack knock sound synchronized with toast appearance
+      audio.playSlackKnock();
+
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
       }, 3000);
     }, 3000);
 
-    return () => clearInterval(toastInterval);
+    return () => {
+      clearInterval(toastInterval);
+      audio.stopNightmarePings();
+    };
   }, [totalSubtasks]);
 
   // Show ending after 20+ subtasks or 60 seconds
