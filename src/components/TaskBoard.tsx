@@ -77,7 +77,7 @@ export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
     );
   };
 
-  const { dragState, handleMouseDown, handleMouseMove, handleMouseUp, cardOffset } =
+  const { dragState, handleMouseDown, handleTouchStart, handleMouseMove, handleTouchMove, handleMouseUp, handleTouchEnd, cardOffset } =
     useDrag(handleDrop);
 
   const todoTasks = tasks.filter((t) => t.column === 'todo');
@@ -88,7 +88,9 @@ export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
     <div
       className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4 sm:p-8"
       onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
       onMouseUp={handleMouseUp}
+      onTouchEnd={handleTouchEnd}
       style={{ userSelect: dragState.isDragging ? 'none' : 'auto' }}
     >
       <div className="max-w-6xl mx-auto">
@@ -117,6 +119,7 @@ export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
                   key={task.id}
                   task={task}
                   onMouseDown={task.id === '1' ? (e) => handleMouseDown(e, task.id) : undefined}
+                  onTouchStart={task.id === '1' ? (e) => handleTouchStart(e, task.id) : undefined}
                   isDragging={dragState.draggedItem === task.id}
                   isHighlighted={task.id === '1'}
                 />

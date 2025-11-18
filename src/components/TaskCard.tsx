@@ -3,13 +3,14 @@ import { BoardTask } from '../types';
 interface TaskCardProps {
   task: BoardTask;
   onMouseDown?: (e: React.MouseEvent) => void;
+  onTouchStart?: (e: React.TouchEvent) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;
   isHighlighted?: boolean;
 }
 
-export const TaskCard = ({ task, onMouseDown, isDragging, style, isHighlighted }: TaskCardProps) => {
-  const isDraggable = onMouseDown !== undefined;
+export const TaskCard = ({ task, onMouseDown, onTouchStart, isDragging, style, isHighlighted }: TaskCardProps) => {
+  const isDraggable = onMouseDown !== undefined || onTouchStart !== undefined;
 
   return (
     <div
@@ -21,6 +22,7 @@ export const TaskCard = ({ task, onMouseDown, isDragging, style, isHighlighted }
         isHighlighted ? 'ring-2 ring-purple-400 ring-opacity-50 shadow-lg' : ''
       }`}
       onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
       style={style}
     >
       <div className="flex items-start justify-between mb-2">
