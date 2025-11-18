@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TaskBoard } from './components/TaskBoard';
 import { FallingCard } from './components/FallingCard';
 import { FloatingFragments } from './components/FloatingFragments';
@@ -6,23 +6,24 @@ import { NightmareZone } from './components/NightmareZone';
 import { EndingModal } from './components/EndingModal';
 import { GameEndingScreen } from './components/GameEndingScreen';
 import { ManagerMessage } from './components/ManagerMessage';
-import { Phase, type BoardTask } from './types';
+import { type BoardTask } from './types';
 import { useGlitch } from './hooks/useGlitch';
 import { audioManager } from './utils/audio';
 import { ANIMATION_CONFIG } from './config/animations';
+import { GameStateMachine } from './core/GameStateMachine';
 
 function App() {
-  const [showManagerMessage, setShowManagerMessage] = useState(true);
-  const [phase, setPhase] = useState<Phase>('board');
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [endingVariant, setEndingVariant] = useState<'complete' | 'leave'>('complete');
-  const [dropPosition, setDropPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [cardWidth, setCardWidth] = useState<number>(320);
+  // Initialize game state machine
+  const stateMachine = useMemo(() => new GameStateMachine(), []);
+  const [gameState, setGameState] = useState(stateMachine.getState());
 
-  // Game ending state
-  const [gameEndingType, setGameEndingType] = useState<'burn' | 'delegate' | 'assimilate' | null>(null);
-  const [tasksUnlocked, setTasksUnlocked] = useState(0);
-  const [nightmareStage, setNightmareStage] = useState(0);
+  // Subscribe to state changes
+  useEffect(() => {
+    const unsubscribe = stateMachine.subscribe((newState) => {
+      setGameState(newState);
+    });
+    return unsubscribe;
+  }, [stateMachine]);
 
   const handleAudioInit = async () => {
     await audioManager.initialize();
@@ -41,43 +42,45 @@ function App() {
   // Track scroll position
   useEffect(() => {
     const handleScroll = () => {
-      setScrollPosition(window.scrollY);
+      const position = window.scrollY;
+      stateMachine.dispatch({ type: 'SCROLL', payload: { position } });
 
       // Check if user reached the ground
-      if (window.scrollY >= ANIMATION_CONFIG.falling.scrollDistance && phase === 'falling') {
+      if (stateMachine.shouldTransitionToGround(ANIMATION_CONFIG.falling.scrollDistance)) {
         document.body.style.overflow = 'hidden';
-        setPhase('ground');
+        stateMachine.dispatch({ type: 'REACHED_GROUND' });
         audioManager.playGroundDrone();
 
         // Transition to nightmare after lingering pause
         setTimeout(() => {
-          setPhase('nightmare');
+          stateMachine.dispatch({ type: 'GROUND_TIMER_COMPLETE' });
         }, ANIMATION_CONFIG.ground.lingerDuration);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [phase]);
+  }, [stateMachine]);
 
   const { intensity, hueRotation, scanlineOpacity } = useGlitch(
-    scrollPosition,
+    gameState.scrollPosition,
     ANIMATION_CONFIG.falling.scrollDistance
   );
 
   // Play falling audio as user scrolls
   useEffect(() => {
-    if (phase === 'falling' && intensity > 0.1) {
+    if (gameState.phase === 'falling' && intensity > 0.1) {
       audioManager.playFallingPing(intensity);
     }
-  }, [Math.floor(scrollPosition / ANIMATION_CONFIG.falling.audioTriggerInterval)]); // Trigger based on config
+  }, [Math.floor(gameState.scrollPosition / ANIMATION_CONFIG.falling.audioTriggerInterval), gameState.phase, intensity]);
 
   const handleTaskMovedToInProgress = (position: { x: number; y: number }, width: number) => {
     // Extend page height
     document.body.style.minHeight = `${ANIMATION_CONFIG.falling.pageHeight}px`;
-    setDropPosition(position);
-    setCardWidth(width);
-    setPhase('falling');
+    stateMachine.dispatch({
+      type: 'TASK_MOVED_TO_IN_PROGRESS',
+      payload: { position, width },
+    });
   };
 
   const handleFallingCardLanded = () => {
@@ -85,42 +88,39 @@ function App() {
   };
 
   const handleNightmareComplete = () => {
-    setEndingVariant('complete');
-    setPhase('ending');
+    stateMachine.dispatch({ type: 'NIGHTMARE_COMPLETE' });
   };
 
   const handleNightmareLeave = () => {
-    setEndingVariant('leave');
-    setPhase('ending');
+    stateMachine.dispatch({ type: 'NIGHTMARE_LEAVE' });
   };
 
   const handleGameEnding = (
     endingType: 'burn' | 'delegate' | 'assimilate',
-    unlocked: number,
-    stage: number
+    tasksUnlocked: number,
+    nightmareStage: number
   ) => {
-    setGameEndingType(endingType);
-    setTasksUnlocked(unlocked);
-    setNightmareStage(stage);
-    setPhase('ending');
+    stateMachine.dispatch({
+      type: 'GAME_ENDING',
+      payload: { endingType, tasksUnlocked, nightmareStage },
+    });
   };
 
   const handleRestart = () => {
     document.body.style.overflow = 'auto';
     document.body.style.minHeight = 'auto';
     window.scrollTo(0, 0);
-    setShowManagerMessage(true);
-    setPhase('board');
+    stateMachine.dispatch({ type: 'RESTART' });
   };
 
   const handleDismissMessage = () => {
-    setShowManagerMessage(false);
+    stateMachine.dispatch({ type: 'DISMISS_MANAGER_MESSAGE' });
   };
 
   return (
     <>
       {/* Manager Message - Shows before everything else */}
-      {showManagerMessage && (
+      {gameState.showManagerMessage && (
         <ManagerMessage
           onDismiss={handleDismissMessage}
           onAudioInit={handleAudioInit}
@@ -130,23 +130,23 @@ function App() {
       <div
         className="relative"
         style={{
-          filter: phase === 'falling' ? `hue-rotate(${hueRotation}deg)` : undefined,
+          filter: gameState.phase === 'falling' ? `hue-rotate(${hueRotation}deg)` : undefined,
         }}
       >
       {/* Phase 1: Board */}
-      {phase === 'board' && !showManagerMessage && (
+      {gameState.phase === 'board' && !gameState.showManagerMessage && (
         <TaskBoard onTaskMovedToInProgress={handleTaskMovedToInProgress} />
       )}
 
       {/* Phase 2: Falling */}
-      {phase === 'falling' && (
+      {gameState.phase === 'falling' && (
         <>
           {/* Falling card */}
           <FallingCard
             task={fallingTask}
             onLanded={handleFallingCardLanded}
-            initialPosition={dropPosition}
-            cardWidth={cardWidth}
+            initialPosition={gameState.dropPosition}
+            cardWidth={gameState.cardWidth}
           />
 
           {/* Floating fragments */}
@@ -161,7 +161,7 @@ function App() {
       )}
 
       {/* Phase 3: Ground */}
-      {phase === 'ground' && (
+      {gameState.phase === 'ground' && (
         <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
           <p className="text-red-500 text-2xl font-bold animate-pulse">
             ▼ YOU HAVE REACHED THE BOTTOM ▼
@@ -170,7 +170,7 @@ function App() {
       )}
 
       {/* Phase 4: Nightmare */}
-      {phase === 'nightmare' && (
+      {gameState.phase === 'nightmare' && (
         <NightmareZone
           onComplete={handleNightmareComplete}
           onLeave={handleNightmareLeave}
@@ -185,16 +185,16 @@ function App() {
       )}
 
       {/* Phase 5: Ending */}
-      {phase === 'ending' && gameEndingType && (
+      {gameState.phase === 'ending' && gameState.gameEndingType && (
         <GameEndingScreen
-          endingType={gameEndingType}
-          tasksUnlocked={tasksUnlocked}
-          nightmareStage={nightmareStage}
+          endingType={gameState.gameEndingType}
+          tasksUnlocked={gameState.tasksUnlocked}
+          nightmareStage={gameState.nightmareStage}
           onRestart={handleRestart}
         />
       )}
-      {phase === 'ending' && !gameEndingType && (
-        <EndingModal variant={endingVariant} onRestart={handleRestart} />
+      {gameState.phase === 'ending' && !gameState.gameEndingType && (
+        <EndingModal variant={gameState.endingVariant} onRestart={handleRestart} />
       )}
       </div>
     </>
