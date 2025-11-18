@@ -8,7 +8,8 @@ import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
-import { useCursorDrift, getDriftTransform } from '../hooks/useCursorDrift';
+import { TaskItem } from './nightmare/TaskItem';
+import { useCursorDrift } from '../hooks/useCursorDrift';
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
@@ -214,86 +215,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
 
   // Toast spam is now handled by ToastManager component
 
-  // Get button text based on task state
-  const getTaskButtonText = (task: Task) => {
-    if (stage === 'chaos') {
-      const texts = ['Attempt?', 'Try it', 'Click here', 'DO IT'];
-      return texts[task.depth % texts.length];
-    }
-    // Always show "Attempt" - don't reveal blocked status
-    return 'Attempt';
-  };
-
-  // Render tasks
-  const renderTask = (task: Task) => {
-    const showWiggle = stage === 'chaos';
-    const avoidCursor = stage === 'automation' || stage === 'chaos';
-    const isCompleted = task.status === 'completed';
-    const isDiscoveredBlocked = discoveredBlockedTasks.has(task.id);
-
-    // Don't render the root task in the list
-    if (task.id === 'root_task') return null;
-
-    // Determine border color
-    let borderColor = 'border-blue-500';
-    if (isCompleted) {
-      borderColor = 'border-green-500 opacity-50';
-    } else if (isDiscoveredBlocked) {
-      borderColor = 'border-orange-400/60'; // Subtle orange for discovered blocked tasks
-    }
-
-    return (
-      <div
-        key={task.id}
-        className="mb-2"
-        style={{
-          transform: avoidCursor
-            ? `translateX(${Math.sin(Date.now() / 1000 + task.depth) * 8}px)`
-            : undefined,
-          transition: 'transform 0.3s ease',
-        }}
-      >
-        <div
-          className={`bg-gray-800 border ${borderColor} rounded p-3 ${showWiggle ? 'wiggle' : ''}`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                {/* Status icon - only show completed */}
-                {isCompleted && <span className="text-green-500">✓</span>}
-
-                <div className="text-white text-sm font-medium">
-                  {task.title}
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-xs mt-1 text-gray-400">
-                {task.description}
-              </p>
-            </div>
-
-            {/* Action button - always show for non-completed tasks */}
-            {!isCompleted && (
-              <button
-                onClick={() => handleTaskClick(task)}
-                className={`px-3 py-1 text-white text-xs rounded transition-colors ${
-                  stage === 'chaos'
-                    ? 'bg-red-600 hover:bg-red-500'
-                    : 'bg-blue-600 hover:bg-blue-500'
-                }`}
-                style={{
-                  transform: getDriftTransform(cursorDrift) || undefined,
-                }}
-              >
-                {getTaskButtonText(task)}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Task rendering is now handled by TaskItem component
 
   // Helper to get current nightmare stage number
   const getNightmareStageNumber = (): number => {
@@ -435,7 +357,16 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
               <div className="space-y-2">
                 {tasks
                   .filter((task) => task.status !== 'completed' && task.id !== 'root_task')
-                  .map((task) => renderTask(task))}
+                  .map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      stage={stage}
+                      cursorDrift={cursorDrift}
+                      isDiscoveredBlocked={discoveredBlockedTasks.has(task.id)}
+                      onTaskClick={handleTaskClick}
+                    />
+                  ))}
               </div>
             </div>
 
@@ -453,7 +384,16 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
               <div className="space-y-2">
                 {tasks
                   .filter((task) => task.status === 'completed' && task.id !== 'root_task')
-                  .map((task) => renderTask(task))}
+                  .map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      stage={stage}
+                      cursorDrift={cursorDrift}
+                      isDiscoveredBlocked={discoveredBlockedTasks.has(task.id)}
+                      onTaskClick={handleTaskClick}
+                    />
+                  ))}
                 {tasks.filter((task) => task.status === 'completed' && task.id !== 'root_task').length === 0 && (
                   <div className="text-gray-500 text-sm italic">
                     No tasks completed yet
