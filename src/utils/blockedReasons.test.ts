@@ -13,7 +13,7 @@ describe('getBlockedReason', () => {
         status: 'blocked',
         blockedBy: ['dep1'],
         depth: 1,
-        archetype: archetype as any,
+        archetype: archetype as never,
         isCompletable: false,
       };
 

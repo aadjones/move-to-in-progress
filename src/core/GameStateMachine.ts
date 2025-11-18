@@ -150,8 +150,8 @@ export class GameStateMachine {
 
       default:
         // TypeScript exhaustiveness check
-        const _exhaustive: never = event;
-        return _exhaustive;
+        { const _exhaustive: never = event;
+        return _exhaustive; }
     }
 
     // Notify listeners
