@@ -8,6 +8,7 @@ import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
+import { useCursorDrift, getDriftTransform } from '../hooks/useCursorDrift';
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
@@ -27,7 +28,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
   const [stage, setStage] = useState<GameStage>('initial');
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [cursorDrift, setCursorDrift] = useState(0);
+  const cursorDrift = useCursorDrift(stage);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [showBlockedModal, setShowBlockedModal] = useState(false);
@@ -182,16 +183,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
     }
   }, [totalTasks, stage]);
 
-  // STAGE 5+: Cursor drift
-  useEffect(() => {
-    if (stage === 'mutating') {
-      setCursorDrift(CHAOS_THRESHOLDS.CURSOR_DRIFT_SUBTLE);
-    } else if (stage === 'automation') {
-      setCursorDrift(CHAOS_THRESHOLDS.CURSOR_DRIFT_OBVIOUS);
-    } else if (stage === 'chaos') {
-      setCursorDrift(CHAOS_THRESHOLDS.CURSOR_DRIFT_INSANE);
-    }
-  }, [stage]);
+  // Cursor drift is now handled by useCursorDrift hook
 
   // STAGE 6+: Auto-complete random tasks (automation chaos)
   useEffect(() => {
@@ -291,11 +283,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
                     : 'bg-blue-600 hover:bg-blue-500'
                 }`}
                 style={{
-                  transform: cursorDrift > 0
-                    ? `translate(${Math.random() * cursorDrift - cursorDrift / 2}px, ${
-                        Math.random() * cursorDrift - cursorDrift / 2
-                      }px)`
-                    : undefined,
+                  transform: getDriftTransform(cursorDrift) || undefined,
                 }}
               >
                 {getTaskButtonText(task)}
