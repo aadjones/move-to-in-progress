@@ -4,8 +4,9 @@ import { FallingCard } from './components/FallingCard';
 import { FloatingFragments } from './components/FloatingFragments';
 import { NightmareZone } from './components/NightmareZone';
 import { EndingModal } from './components/EndingModal';
+import { GameEndingScreen } from './components/GameEndingScreen';
 import { ManagerMessage } from './components/ManagerMessage';
-import { Phase } from './types';
+import { Phase, type BoardTask } from './types';
 import { useGlitch } from './hooks/useGlitch';
 import { audioManager } from './utils/audio';
 import { ANIMATION_CONFIG } from './config/animations';
@@ -18,11 +19,16 @@ function App() {
   const [dropPosition, setDropPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [cardWidth, setCardWidth] = useState<number>(320);
 
+  // Game ending state
+  const [gameEndingType, setGameEndingType] = useState<'burn' | 'delegate' | 'assimilate' | null>(null);
+  const [tasksUnlocked, setTasksUnlocked] = useState(0);
+  const [nightmareStage, setNightmareStage] = useState(0);
+
   const handleAudioInit = async () => {
     await audioManager.initialize();
   };
 
-  const fallingTask = {
+  const fallingTask: BoardTask = {
     id: '1',
     title: 'Refactor Notifications System',
     column: 'todo' as const,
@@ -85,6 +91,17 @@ function App() {
 
   const handleNightmareLeave = () => {
     setEndingVariant('leave');
+    setPhase('ending');
+  };
+
+  const handleGameEnding = (
+    endingType: 'burn' | 'delegate' | 'assimilate',
+    unlocked: number,
+    stage: number
+  ) => {
+    setGameEndingType(endingType);
+    setTasksUnlocked(unlocked);
+    setNightmareStage(stage);
     setPhase('ending');
   };
 
@@ -157,6 +174,7 @@ function App() {
         <NightmareZone
           onComplete={handleNightmareComplete}
           onLeave={handleNightmareLeave}
+          onGameEnding={handleGameEnding}
           audio={{
             playNightmarePing: audioManager.playNightmarePing.bind(audioManager),
             startNightmarePings: audioManager.startNightmarePings.bind(audioManager),
@@ -167,7 +185,15 @@ function App() {
       )}
 
       {/* Phase 5: Ending */}
-      {phase === 'ending' && (
+      {phase === 'ending' && gameEndingType && (
+        <GameEndingScreen
+          endingType={gameEndingType}
+          tasksUnlocked={tasksUnlocked}
+          nightmareStage={nightmareStage}
+          onRestart={handleRestart}
+        />
+      )}
+      {phase === 'ending' && !gameEndingType && (
         <EndingModal variant={endingVariant} onRestart={handleRestart} />
       )}
       </div>

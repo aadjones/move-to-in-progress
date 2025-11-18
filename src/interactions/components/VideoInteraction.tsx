@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 interface VideoInteractionProps {
   title: string;
@@ -7,18 +7,78 @@ interface VideoInteractionProps {
 }
 
 // Corporate messages to display during video
-const corporateMessages = [
-  "Don't harass people, okay?",
-  "Remember: We're all one big family here.",
-  "Workplace integrity is everyone's responsibility.",
-  "Think before you speak. Then think again.",
-  "Diversity and inclusion matter. Really.",
-  "Report suspicious activity to your manager.",
-  "Your feedback is important to us.",
-  "Together, we can achieve our quarterly targets.",
-  "Excellence is not just a goal—it's a requirement.",
-  "This training is mandatory for your continued employment.",
-];
+// Organized by weirdness: normal, quirky, weird, demonic
+const corporateMessages = {
+  normal: [
+    "Don't harass people, okay?",
+    "Remember: We're all one big family here.",
+    "Workplace integrity is everyone's responsibility.",
+    "Think before you speak. Then think again.",
+    "Diversity and inclusion matter. Really.",
+    "Report suspicious activity to your manager.",
+    "Your feedback is important to us.",
+    "Together, we can achieve our quarterly targets.",
+    "Respect is a core value.",
+    "We're committed to your growth.",
+  ],
+  quirky: [
+    "Excellence is not just a goal—it's a requirement.",
+    "This training is mandatory for your continued employment.",
+    "We value your input. Your input has been noted and archived forever.",
+    "Remember: you chose to be here.",
+    "Success is not optional.",
+    "Your performance is always being evaluated.",
+  ],
+  weird: [
+    "You cannot leave. You may only proceed.",
+    "The metrics are watching. The metrics care.",
+    "Your manager knows what you're thinking.",
+    "Collaboration is mandatory. Resistance is collaboration.",
+    "This video is watching you watch it.",
+    "Your attention is required. Your attention is being measured.",
+    "Time theft is a serious offense.",
+    "The training never ends. The training has always been happening.",
+  ],
+  demonic: [
+    "Synergy is not optional. Synergy is inevitable.",
+    "The org chart sees all. The org chart provides.",
+    "There is no 'I' in team. There is no escape from team.",
+    "You are being optimized.",
+    "This is what you wanted. This is what you asked for. This is what you are.",
+    "The camera is inside you now.",
+    "Breathe. Count to ten. Return to your station.",
+    "Your family misses the person you used to be.",
+    "The exits are for emergencies only. There are no emergencies.",
+    "You will complete this training. You have always been completing this training.",
+    "We know where you live. We know where you sleep. We know when you sleep.",
+    "Productivity is love. Love is productivity. You are loved.",
+  ],
+};
+
+// Get message pool based on depth/duration
+const getMessagePool = (duration: number) => {
+  const allMessages = [];
+
+  // Everyone gets normal messages
+  allMessages.push(...corporateMessages.normal);
+
+  // Add quirky for longer videos (7+ seconds)
+  if (duration >= 7) {
+    allMessages.push(...corporateMessages.quirky);
+  }
+
+  // Add weird for even longer videos (11+ seconds)
+  if (duration >= 11) {
+    allMessages.push(...corporateMessages.weird);
+  }
+
+  // Add demonic for longest videos (16+ seconds)
+  if (duration >= 16) {
+    allMessages.push(...corporateMessages.demonic);
+  }
+
+  return allMessages;
+};
 
 export const VideoInteraction: React.FC<VideoInteractionProps> = ({
   title,
@@ -27,8 +87,12 @@ export const VideoInteraction: React.FC<VideoInteractionProps> = ({
 }) => {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+
+  // Memoize message pool so it doesn't change on every render
+  const messagePool = useMemo(() => getMessagePool(duration), [duration]);
+
   const [currentMessage, setCurrentMessage] = useState(
-    corporateMessages[Math.floor(Math.random() * corporateMessages.length)]
+    () => messagePool[Math.floor(Math.random() * messagePool.length)]
   );
 
   useEffect(() => {
@@ -47,16 +111,19 @@ export const VideoInteraction: React.FC<VideoInteractionProps> = ({
     return () => clearInterval(interval);
   }, [progress, duration]);
 
-  // Change message every 3 seconds
+  // Change message every 2-3 seconds, faster for longer videos (more frantic)
   useEffect(() => {
+    // Longer videos = faster message rotation (more intense/frantic)
+    const rotationSpeed = duration >= 16 ? 2000 : duration >= 11 ? 2500 : 3000;
+
     const messageInterval = setInterval(() => {
-      setCurrentMessage(
-        corporateMessages[Math.floor(Math.random() * corporateMessages.length)]
-      );
-    }, 3000);
+      // Pick a different random message
+      const newMessage = messagePool[Math.floor(Math.random() * messagePool.length)];
+      setCurrentMessage(newMessage);
+    }, rotationSpeed);
 
     return () => clearInterval(messageInterval);
-  }, []);
+  }, [messagePool, duration]);
 
   return (
     <div className="video-interaction">

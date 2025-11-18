@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Task } from '../types';
+import { BoardTask } from '../types';
 import { ANIMATION_CONFIG } from '../config/animations';
 
 interface FallingCardProps {
-  task: Task;
+  task: BoardTask;
   onLanded: () => void;
   initialPosition: { x: number; y: number };
   cardWidth: number;

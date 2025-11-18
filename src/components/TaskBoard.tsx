@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Task } from '../types';
+import { BoardTask } from '../types';
 import { TaskCard } from './TaskCard';
 import { useDrag } from '../hooks/useDrag';
 
@@ -8,7 +8,7 @@ interface TaskBoardProps {
 }
 
 export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
-  const [tasks, setTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<BoardTask[]>([
     {
       id: '1',
       title: 'Refactor Notifications System',

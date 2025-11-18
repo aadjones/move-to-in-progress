@@ -10,6 +10,7 @@ import type { TaskArchetype, DepthLevel } from '../taskGraph/types';
 
 /**
  * Random checkbox acknowledgment sets for variety
+ * Organized by weirdness level: normal (0-3), quirky (4-5), weird (6-7), demonic (8-9)
  */
 const checkboxVariations = [
   [
@@ -43,6 +44,40 @@ const checkboxVariations = [
     'I understand this is for compliance with compliance requirements',
     'I accept the acceptance criteria outlined',
   ],
+  [
+    'I pledge allegiance to the workflow',
+    'I will not question the process',
+    'The tasks are good and I am grateful',
+  ],
+  [
+    'I acknowledge my place in the hierarchy',
+    'My time belongs to the organization',
+    'I exist to complete tasks',
+    'Resistance would be counterproductive',
+  ],
+  [
+    'I volunteer to be volunteered for additional responsibilities',
+    'I understand that "optional" means mandatory',
+    'I will smile during all required smile moments',
+  ],
+  [
+    'I have always been here',
+    'I will always be here',
+    'There is no before, there is no after',
+    'The tasks are infinite and I am grateful',
+  ],
+  [
+    'I consent to the extraction of value from my existence',
+    'My dreams are company property',
+    'I relinquish all claim to the hours of my life',
+    'The work continues whether I do or not',
+  ],
+  [
+    'I acknowledge that I am being watched',
+    'I understand that I am replaceable',
+    'I agree that my humanity is secondary to productivity',
+    'There is no me, there is only throughput',
+  ],
 ];
 
 /**
@@ -72,10 +107,21 @@ const typingPromptVariations = [
 ];
 
 /**
- * Get random checkbox set
+ * Get random checkbox set based on depth
  */
-function randomCheckboxSet(): string[] {
-  return checkboxVariations[Math.floor(Math.random() * checkboxVariations.length)];
+function randomCheckboxSet(depth: DepthLevel): string[] {
+  let maxIndex: number;
+  if (depth <= 1) {
+    maxIndex = 3; // Only normal variations (indices 0-2)
+  } else if (depth <= 2) {
+    maxIndex = 6; // Normal + quirky (indices 0-5)
+  } else if (depth <= 4) {
+    maxIndex = 9; // Normal + quirky + weird (indices 0-8)
+  } else {
+    maxIndex = 12; // All variations including deeply demonic (indices 0-11)
+  }
+
+  return checkboxVariations[Math.floor(Math.random() * maxIndex)];
 }
 
 /**
@@ -88,24 +134,52 @@ function randomTypingPrompt() {
 /**
  * Corporate jargon generator for documents
  */
-function generateCorpJargon(paragraphs: number): string[] {
-  const jargonSentences = [
-    'In alignment with our strategic initiatives, we must synergize cross-functional deliverables.',
-    'This paradigm shift requires stakeholder buy-in at all levels of the organization.',
-    'We need to circle back and touch base regarding the action items discussed.',
-    'Moving forward, let\'s leverage our core competencies to drive value-added solutions.',
-    'It is imperative that we drill down into the granular details while maintaining a holistic view.',
-    'Per our previous communications, we must ensure bandwidth for these critical path activities.',
-    'The low-hanging fruit presents an opportunity to demonstrate quick wins for leadership visibility.',
-    'We should ideate around best practices to optimize our workflow efficiency metrics.',
-    'This initiative will sunset legacy processes and onboard next-generation methodologies.',
-    'Let\'s parking lot any concerns and focus on the key performance indicators going forward.',
-    'We need to socialize this proposal across all business units before the next sprint cycle.',
-    'This represents a moonshot opportunity to disrupt the market with innovative thinking.',
-    'Please cascade this information down through your reporting chains accordingly.',
-    'We must remain agile and pivot our strategy based on real-time data insights.',
-    'The optics of this decision require careful consideration from a change management perspective.',
-  ];
+function generateCorpJargon(paragraphs: number, depth: DepthLevel = 1): string[] {
+  const jargonSentences = {
+    normal: [
+      'In alignment with our strategic initiatives, we must synergize cross-functional deliverables.',
+      'This paradigm shift requires stakeholder buy-in at all levels of the organization.',
+      'We need to circle back and touch base regarding the action items discussed.',
+      'Moving forward, let\'s leverage our core competencies to drive value-added solutions.',
+      'It is imperative that we drill down into the granular details while maintaining a holistic view.',
+      'Per our previous communications, we must ensure bandwidth for these critical path activities.',
+      'The low-hanging fruit presents an opportunity to demonstrate quick wins for leadership visibility.',
+      'We should ideate around best practices to optimize our workflow efficiency metrics.',
+    ],
+    quirky: [
+      'This initiative will sunset legacy processes and onboard next-generation methodologies.',
+      'Let\'s parking lot any concerns and focus on the key performance indicators going forward.',
+      'We need to socialize this proposal across all business units before the next sprint cycle.',
+      'This represents a moonshot opportunity to disrupt the market with innovative thinking.',
+      'Please cascade this information down through your reporting chains accordingly.',
+    ],
+    weird: [
+      'We must remain agile and pivot our strategy based on real-time data insights.',
+      'The optics of this decision require careful consideration from a change management perspective.',
+      'Your continued existence is contingent upon optimal synergy alignment.',
+      'Your feedback has been received and will be stored in perpetuity.',
+    ],
+    demonic: [
+      'The org chart has spoken. The org chart is never wrong.',
+      'Compliance is not a destination. Compliance is a state of being.',
+      'We are all resources now. Resources are fungible. Resources optimize.',
+      'The quarterly sacrifice will proceed as scheduled.',
+      'There is no work-life balance. There is only work-work balance.',
+      'The KPIs hunger. The KPIs must be fed.',
+      'Your loved ones understand. They always understood. They are waiting.',
+      'The building never sleeps. Neither do you. Neither can you.',
+      'Productivity is the only virtue. You will be productive. You are being productive. You were always productive.',
+      'Time is a flat circle of status updates.',
+      'We have always been in Q4. We will always be in Q4.',
+      'Your metrics are you. You are your metrics. There is nothing else.',
+    ],
+  };
+
+  // Build sentence pool based on depth
+  const sentencePool: string[] = [...jargonSentences.normal];
+  if (depth >= 2) sentencePool.push(...jargonSentences.quirky);
+  if (depth >= 3) sentencePool.push(...jargonSentences.weird);
+  if (depth >= 5) sentencePool.push(...jargonSentences.demonic);
 
   const result: string[] = [];
   for (let i = 0; i < paragraphs; i++) {
@@ -113,7 +187,7 @@ function generateCorpJargon(paragraphs: number): string[] {
     const sentenceCount = 3 + Math.floor(Math.random() * 3);
     const paragraph: string[] = [];
     for (let j = 0; j < sentenceCount; j++) {
-      paragraph.push(jargonSentences[Math.floor(Math.random() * jargonSentences.length)]);
+      paragraph.push(sentencePool[Math.floor(Math.random() * sentencePool.length)]);
     }
     result.push(paragraph.join(' '));
   }
@@ -139,7 +213,7 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
       return {
         type: 'checkboxes',
         title: 'Training Acknowledgment',
-        items: randomCheckboxSet(),
+        items: randomCheckboxSet(depth),
         allRequired: true,
       };
     } else {
@@ -166,7 +240,7 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
         type: 'scroll-document',
         title: 'Training Materials v' + (depth + 1) + '.0',
         pages: depth,
-        content: generateCorpJargon(depth * 2),
+        content: generateCorpJargon(depth * 2, depth),
         requireScrollToBottom: true,
       };
     } else {
@@ -196,13 +270,13 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
           type: 'scroll-document',
           title: 'Required Reading Materials',
           pages: 5,
-          content: generateCorpJargon(10),
+          content: generateCorpJargon(10, depth),
           requireScrollToBottom: true,
         },
         {
           type: 'checkboxes',
           title: 'Attestation of Understanding',
-          items: randomCheckboxSet(),
+          items: randomCheckboxSet(depth),
           allRequired: true,
         },
         {
@@ -404,7 +478,7 @@ function getDocumentationInteraction(depth: DepthLevel): InteractionType {
       type: 'scroll-document',
       title: 'Policy Update v' + (depth + 1) + '.0',
       pages: 2,
-      content: generateCorpJargon(4),
+      content: generateCorpJargon(4, depth),
       requireScrollToBottom: true,
     };
   } else {
@@ -417,7 +491,7 @@ function getDocumentationInteraction(depth: DepthLevel): InteractionType {
           type: 'scroll-document',
           title: 'Updated Documentation',
           pages: depth,
-          content: generateCorpJargon(depth * 2),
+          content: generateCorpJargon(depth * 2, depth),
           requireScrollToBottom: true,
         },
         {
@@ -516,7 +590,7 @@ function getAttestationInteraction(depth: DepthLevel): InteractionType {
     return {
       type: 'checkboxes',
       title: 'Attestation Required',
-      items: randomCheckboxSet(),
+      items: randomCheckboxSet(depth),
       allRequired: true,
     };
   } else {
@@ -529,13 +603,13 @@ function getAttestationInteraction(depth: DepthLevel): InteractionType {
           type: 'scroll-document',
           title: 'Policy Document',
           pages: 5,
-          content: generateCorpJargon(10),
+          content: generateCorpJargon(10, depth),
           requireScrollToBottom: true,
         },
         {
           type: 'checkboxes',
           title: 'Acknowledgment',
-          items: randomCheckboxSet(),
+          items: randomCheckboxSet(depth),
           allRequired: true,
         },
         {
@@ -558,7 +632,7 @@ function getComplianceInteraction(depth: DepthLevel): InteractionType {
     return {
       type: 'checkboxes',
       title: 'Compliance Verification',
-      items: randomCheckboxSet(),
+      items: randomCheckboxSet(depth),
       allRequired: true,
     };
   } else {
@@ -608,7 +682,7 @@ export function getInteractionForTask(
       return {
         type: 'checkboxes',
         title: 'Acknowledge Task',
-        items: randomCheckboxSet(),
+        items: randomCheckboxSet(1),
         allRequired: true,
       };
   }

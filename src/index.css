@@ -81,3 +81,13 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.8; }
 }
+
+/* Fade in animation */
+.animate-fadeIn {
+  animation: fadeIn 1.5s ease-in;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}

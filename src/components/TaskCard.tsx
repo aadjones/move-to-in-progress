@@ -1,7 +1,7 @@
-import { Task } from '../types';
+import { BoardTask } from '../types';
 
 interface TaskCardProps {
-  task: Task;
+  task: BoardTask;
   onMouseDown?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;

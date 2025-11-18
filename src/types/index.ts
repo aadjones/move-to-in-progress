@@ -1,4 +1,4 @@
-export interface Task {
+export interface BoardTask {
   id: string;
   title: string;
   column: 'todo' | 'inProgress' | 'done';

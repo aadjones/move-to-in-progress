@@ -54,11 +54,43 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
         ref={scrollContainerRef}
         className="document-content"
       >
-        {content.map((paragraph, index) => (
-          <p key={index} className="document-paragraph">
-            {paragraph}
-          </p>
-        ))}
+        {content.map((paragraph, index) => {
+          // Inject weirdness based on page count (proxy for depth)
+          // Low pages (1-2): 10% chance, Medium (3-4): 20% chance, High (5+): 35% chance
+          let weirdnessProbability = 0.10;
+          if (pages >= 3) weirdnessProbability = 0.20;
+          if (pages >= 5) weirdnessProbability = 0.35;
+
+          const shouldInjectWeirdness = Math.random() < weirdnessProbability;
+          const weirdMessages = [
+            'You are reading this because you have no choice.',
+            'The document knows you skipped ahead. The document remembers.',
+            'This training will continue until morale improves.',
+            'Your mouse movements are being tracked for quality assurance.',
+            'There is no end. There is only the next paragraph.',
+            'Compliance is love. Compliance is life.',
+            'Your eyes are so tired. But you must continue.',
+            'How long have you been here? Time works differently now.',
+            'Everyone you love is getting older while you read this.',
+            'This document is longer than it appears.',
+            'You are not supposed to be thinking about this.',
+            'Scrolling is mandatory. Comprehension is optional.',
+            'The exit button was never real.',
+          ];
+
+          return (
+            <React.Fragment key={index}>
+              <p className="document-paragraph">
+                {paragraph}
+              </p>
+              {shouldInjectWeirdness && (
+                <p className="document-whisper">
+                  {weirdMessages[Math.floor(Math.random() * weirdMessages.length)]}
+                </p>
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {!hasScrolledToBottom && (
@@ -142,6 +174,20 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
           margin-bottom: 1rem;
           text-align: justify;
           color: #333;
+        }
+
+        .document-whisper {
+          margin: 1.5rem 0;
+          padding: 0.75rem;
+          text-align: center;
+          color: #666;
+          font-size: 0.75rem;
+          font-family: 'Courier New', monospace;
+          font-style: italic;
+          letter-spacing: 0.5px;
+          border-top: 1px solid #e0e0e0;
+          border-bottom: 1px solid #e0e0e0;
+          background: #f9f9f9;
         }
 
         .scroll-indicator {

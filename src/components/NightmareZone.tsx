@@ -22,8 +22,9 @@ const CHAOS_THRESHOLDS = {
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
 interface NightmareZoneProps {
-  onComplete: () => void;
-  onLeave: () => void;
+  onComplete?: () => void;
+  onLeave?: () => void;
+  onGameEnding: (endingType: 'burn' | 'delegate' | 'assimilate', tasksUnlocked: number, nightmareStage: number) => void;
   audio: {
     playNightmarePing: (chaosLevel: number) => void;
     startNightmarePings: (subtaskCount: number) => void;
@@ -32,7 +33,7 @@ interface NightmareZoneProps {
   };
 }
 
-export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps) => {
+export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
   const [stage, setStage] = useState<GameStage>('initial');
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -334,20 +335,37 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
     );
   };
 
+  // Helper to get current nightmare stage number
+  const getNightmareStageNumber = (): number => {
+    if (stage === 'chaos') return 7;
+    if (stage === 'automation') return 6;
+    if (stage === 'mutating') return 5;
+    if (stage === 'multiplying') return 4;
+    if (stage === 'resolving') return 3;
+    if (stage === 'started') return 2;
+    return 1;
+  };
+
   // Escape hatch handlers
   const handleBurnItDown = () => {
+    const count = taskManager.getTaskCount();
+    const stage = getNightmareStageNumber();
     taskManager.executeBurnItDown();
-    onComplete();
+    onGameEnding('burn', count, stage);
   };
 
   const handleDelegate = () => {
+    const count = taskManager.getTaskCount();
+    const stage = getNightmareStageNumber();
     taskManager.executeDelegate();
-    onLeave();
+    onGameEnding('delegate', count, stage);
   };
 
   const handleAssimilate = () => {
+    const count = taskManager.getTaskCount();
+    const stage = getNightmareStageNumber();
     taskManager.executeAssimilate('Senior Bureaucracy Facilitator');
-    onComplete();
+    onGameEnding('assimilate', count, stage);
   };
 
   // Check if we should show escape hatches

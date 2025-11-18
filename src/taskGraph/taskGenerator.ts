@@ -28,17 +28,17 @@ function generateTaskId(): string {
  */
 export const DEFAULT_TASK_CONFIG: TaskGenerationConfig = {
   early: {
-    blockProbability: 0.2,
+    blockProbability: 0.35,
     spawnMultiplier: { min: 1, max: 2 },
     patternMixing: false,
   },
   mid: {
-    blockProbability: 0.3,
+    blockProbability: 0.5,
     spawnMultiplier: { min: 2, max: 3 },
     patternMixing: true,
   },
   late: {
-    blockProbability: 0.4,
+    blockProbability: 0.65,
     spawnMultiplier: { min: 3, max: 4 },
     patternMixing: true,
     assimilationOptionsEnabled: true,

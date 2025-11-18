@@ -156,7 +156,7 @@ export const ComplianceCheckpoint = ({ onComplete, audio, children }: Compliance
     <>
       {/* Locked Board Overlay */}
       {!isUnlocked && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-start justify-center overflow-y-auto pt-8">
           <div className="max-w-3xl w-full p-8">
             {/* Lock Notice Card */}
             <div className="bg-gradient-to-br from-red-600 to-orange-600 rounded-lg shadow-2xl p-6 mb-6 border-4 border-red-700">
