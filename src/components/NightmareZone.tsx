@@ -1,24 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Subtask } from '../types';
-import { acceptanceCriteria, subtaskTemplates, titleMutations, toastMessages } from '../data/subtasks';
-import { countSubtasks, flattenUnexpanded, mutateTaskTitles, updateSubtaskById } from '../utils/subtaskTree';
-import { TaskDetailModal } from './TaskDetailModal';
-import { acceptanceCriteriaContent, subtaskContent, TaskContent } from '../data/taskContent';
-import { getRandomComment, getDemonicCharacter } from '../data/characters';
+import { TaskManager } from '../taskGraph/TaskManager';
+import type { Task } from '../taskGraph/types';
+import { InteractionModal } from '../interactions/InteractionModal';
+import type { InteractionResult } from '../interactions/types';
+import { toastMessages } from '../data/subtasks';
 
-// Redesigned chaos thresholds for gradual 7-stage escalation
+// Adapted thresholds for new task system
 const CHAOS_THRESHOLDS = {
-  STAGE_1_ACCEPTANCE_CRITERIA: 1, // Show acceptance criteria
-  STAGE_2_REVEAL_BLOCKERS: 1,     // User clicks to see details
-  STAGE_3_HELPFUL_SYSTEM: 3,      // System "helps" by creating subtasks
-  STAGE_4_MULTIPLICATION: 5,      // Subtasks spawn more subtasks
-  STAGE_5_MUTATION: 8,            // Titles start mutating, cursor drift begins
-  STAGE_6_AUTOMATION: 12,         // Auto-expansion, AI "helping"
-  STAGE_7_CHAOS: 18,              // Full chaos, toast spam
-  MAX_SUBTASKS: 25,               // Exit condition
-  CURSOR_DRIFT_SUBTLE: 3,         // Stage 5: 3px drift
-  CURSOR_DRIFT_OBVIOUS: 10,       // Stage 6: 10px drift
-  CURSOR_DRIFT_INSANE: 25,        // Stage 7: 25px drift
+  STAGE_2_TASKS_APPEAR: 1,        // Tasks start appearing
+  STAGE_3_INTERACTIONS_BEGIN: 3,  // Start requiring interactions
+  STAGE_4_MULTIPLICATION: 8,      // Tasks multiply faster
+  STAGE_5_MUTATION: 12,           // Cursor drift, visual chaos
+  STAGE_6_AUTOMATION: 18,         // Auto-expansion, overwhelming
+  STAGE_7_CHAOS: 24,              // Full chaos, toast spam
+  ESCAPE_THRESHOLD: 30,           // Escape hatches available
+  CURSOR_DRIFT_SUBTLE: 15,        // More noticeable
+  CURSOR_DRIFT_OBVIOUS: 30,       // Much harder to click
+  CURSOR_DRIFT_INSANE: 50,        // Nearly impossible
 } as const;
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
@@ -36,133 +34,163 @@ interface NightmareZoneProps {
 
 export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps) => {
   const [stage, setStage] = useState<GameStage>('initial');
-  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [taskManager] = useState(() => new TaskManager());
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [cursorDrift, setCursorDrift] = useState(0);
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
-  const [showAIHelper, setShowAIHelper] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Subtask | null>(null);
-  const [selectedTaskContent, setSelectedTaskContent] = useState<TaskContent | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showInteractionModal, setShowInteractionModal] = useState(false);
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [blockedReason, setBlockedReason] = useState<string>('');
+  const [discoveredBlockedTasks, setDiscoveredBlockedTasks] = useState<Set<string>>(new Set());
 
-  const totalSubtasks = countSubtasks(subtasks);
+  const totalTasks = tasks.filter((t) => t.id !== 'root_task' && t.status !== 'completed').length;
+  const rootTask = taskManager.getRootTask();
 
-  // Generate random subtask
-  const generateSubtask = useCallback((isAcceptanceCriteria = false): Subtask => {
-    if (isAcceptanceCriteria) {
-      // Use predefined acceptance criteria for initial state
-      const criteria = acceptanceCriteria[subtasks.length % acceptanceCriteria.length];
-      return {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        title: criteria.title,
-        status: criteria.status,
-        children: [],
-        expanded: false,
-        revealed: false,
-        isAcceptanceCriteria: true,
-        contentKey: criteria.title, // Link to content database
-        comments: [],
-      };
-    } else {
-      // Generate random subtask from templates
-      const template = subtaskTemplates[Math.floor(Math.random() * subtaskTemplates.length)];
-      return {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        title: template.title,
-        status: template.status,
-        children: [],
-        expanded: false,
-        revealed: false,
-        contentKey: template.title, // Link to content database
-        comments: [],
-      };
-    }
-  }, [subtasks.length]);
+  // Sync tasks from manager
+  const refreshTasks = useCallback(() => {
+    setTasks(taskManager.getTasks());
+  }, [taskManager]);
 
-  // STAGE 0 → 1: Start Task (show acceptance criteria)
+  // Initialize tasks on mount
+  useEffect(() => {
+    refreshTasks();
+  }, [refreshTasks]);
+
+  // STAGE 0 → 1: Start Task
   const handleStartTask = () => {
-    const criteria = acceptanceCriteria.map((c) => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      title: c.title,
-      status: c.status,
-      children: [],
-      expanded: false,
-      revealed: false,
-      isAcceptanceCriteria: true,
-      contentKey: c.title, // Link to content database
-      comments: [],
-    }));
-    setSubtasks(criteria);
     setStage('started');
+    refreshTasks();
     audio.playNightmarePing(0.1);
   };
 
-  // STAGE 1 → 2: View Details (reveal blockers)
-  const handleViewDetails = () => {
-    setSubtasks((prev) =>
-      prev.map((task) => ({
-        ...task,
-        revealed: true,
-      }))
-    );
-    setStage('blockers-revealed');
-    audio.playNightmarePing(0.2);
+  // Generate absurd blocking reason based on task type
+  const getBlockedReason = (task: Task) => {
+    // Archetype-specific reasons for more variety
+    const reasonsByArchetype: Record<string, string[]> = {
+      training: [
+        "The training video was recorded in 2015 and references a product we no longer sell.",
+        "This course requires completion of Training Module XR-7, which was never created.",
+        "The LMS system is undergoing maintenance scheduled to complete 'sometime in Q2'.",
+        "Your training account was deactivated when you changed teams. Reactivation takes 2-3 weeks.",
+      ],
+      'approval-request': [
+        "Your manager's manager's manager needs to sign off, but they're on a 6-month sabbatical.",
+        "This requires VP approval. The VP position has been vacant since March.",
+        "The approval workflow references a role that was eliminated in the last reorganization.",
+        "Sarah from Finance needs to approve this, but Sarah left 8 months ago.",
+      ],
+      'form-submission': [
+        "The form submission button has been disabled pending a security review.",
+        "This form requires your employee ID from the old HR system we migrated from in 2019.",
+        "The form must be reviewed by the Compliance Committee, which meets bi-annually.",
+        "Required field 'Department Code' accepts values that no longer exist in the company.",
+      ],
+      documentation: [
+        "The documentation is locked in Confluence. The space admin left the company.",
+        "This links to the wiki page, which was deprecated and archived without replacement.",
+        "The relevant documentation was deleted during a 'cleanup initiative' last year.",
+        "These docs reference the old process. New process documentation is 'coming soon'.",
+      ],
+      'system-access': [
+        "Access requests must be approved by the Security team, currently understaffed.",
+        "The VPN certificate expired. IT says they'll get to it 'when resources allow'.",
+        "This system uses SSO with a provider we stopped paying for 6 months ago.",
+        "Your access was revoked when you changed roles. Re-provisioning takes 4-6 weeks.",
+      ],
+      meeting: [
+        "The only available time slot conflicts with a company all-hands that hasn't been scheduled yet.",
+        "All three required attendees are in different time zones and have no overlap.",
+        "The conference room booking system has been down since the last server update.",
+        "This meeting requires presence from a team that was dissolved in the reorganization.",
+      ],
+      attestation: [
+        "You must attest that you've read the policy, but the policy link returns a 404.",
+        "Attestation requires your digital signature, which expired in 2022.",
+        "This attestation was already completed, but the system lost the record in a migration.",
+        "The attestation form references compliance standards that were superseded.",
+      ],
+      compliance: [
+        "This compliance check references regulations that were replaced 18 months ago.",
+        "Required audit trail documents are stored in a system we no longer have access to.",
+        "Compliance verification requires a certificate from a vendor we no longer use.",
+        "The compliance officer who created this workflow left, and nobody knows what it does.",
+      ],
+    };
+
+    // Generic reasons as fallback
+    const genericReasons = [
+      `This task requires sign-off from ${task.blockedBy.length} people who are all out this week.`,
+      "The workflow is awaiting approval from a committee that meets quarterly. Next meeting: TBD.",
+      "This depends on a system that's been 'sunset' but not yet replaced.",
+      "The person responsible for this left the company. Their replacement starts next month.",
+      "This task is blocked pending resolution of a ticket filed 3 years ago.",
+      "Required credentials expired and the renewal process is 'being redesigned'.",
+      "The project this relates to was cancelled, but the task wasn't removed from the workflow.",
+      "This requires coordination with a partner team that was outsourced last quarter.",
+    ];
+
+    const archetype = task.archetype || 'unknown';
+    const reasons = reasonsByArchetype[archetype] || genericReasons;
+
+    return reasons[Math.floor(Math.random() * reasons.length)];
   };
 
-  // STAGE 2 → 3: Resolve Blockers (spawn helpful subtasks)
-  const handleResolveBlockers = () => {
-    // Add 2 subtasks under each acceptance criteria, with blockers revealed
-    setSubtasks((prev) =>
-      prev.map((criteria) => ({
-        ...criteria,
-        expanded: true,
-        children: [
-          { ...generateSubtask(), revealed: true }, // Show blockers immediately for spawned tasks
-          { ...generateSubtask(), revealed: true },
-        ],
-      }))
-    );
-    setStage('resolving');
-    setShowAIHelper(true);
-
-    // Hide AI helper message after 3 seconds
-    setTimeout(() => setShowAIHelper(false), 3000);
-  };
-
-  // STAGE 3+: Click on a subtask to "resolve" it (spawns more children)
-  const handleResolveSubtask = (subtaskId: string) => {
-    const spawnCount = totalSubtasks >= CHAOS_THRESHOLDS.STAGE_6_AUTOMATION
-      ? Math.random() > 0.5 ? 3 : 2  // Stage 6: spawn 2-3
-      : Math.random() > 0.5 ? 2 : 1; // Earlier: spawn 1-2
-
-    // All spawned children have blockers revealed immediately
-    const newChildren = Array.from({ length: spawnCount }, () => ({
-      ...generateSubtask(),
-      revealed: true, // Blockers are always visible on nested subtasks
-    }));
-
-    setSubtasks((prev) =>
-      updateSubtaskById(prev, subtaskId, (task) => ({
-        ...task,
-        expanded: true,
-        resolved: true,
-        children: [...(task.children || []), ...newChildren],
-      }))
-    );
-
-    audio.playNightmarePing(Math.min(totalSubtasks / 25, 1));
-  };
-
-  // Update stage based on subtask count
-  useEffect(() => {
-    if (totalSubtasks >= CHAOS_THRESHOLDS.STAGE_7_CHAOS && stage !== 'ending') {
-      setStage('chaos');
-    } else if (totalSubtasks >= CHAOS_THRESHOLDS.STAGE_6_AUTOMATION && stage === 'mutating') {
-      setStage('automation');
-    } else if (totalSubtasks >= CHAOS_THRESHOLDS.STAGE_5_MUTATION && stage === 'resolving') {
-      setStage('mutating');
-    } else if (totalSubtasks >= CHAOS_THRESHOLDS.STAGE_4_MULTIPLICATION && stage === 'resolving') {
-      setStage('multiplying');
+  // Handle task click - check if blocked or open interaction modal
+  const handleTaskClick = (task: Task) => {
+    if (task.status === 'completed') {
+      return;
     }
-  }, [totalSubtasks, stage]);
+
+    // If task is blocked, show the absurd reason
+    if (task.status === 'blocked' || !task.isCompletable) {
+      audio.playNightmarePing(0.2);
+      setSelectedTask(task);
+      setBlockedReason(getBlockedReason(task));
+      setShowBlockedModal(true);
+      // Mark this task as discovered
+      setDiscoveredBlockedTasks((prev) => new Set(prev).add(task.id));
+      return;
+    }
+
+    setSelectedTask(task);
+    setShowInteractionModal(true);
+  };
+
+  // Handle interaction completion
+  const handleInteractionComplete = (_result: InteractionResult) => {
+    if (!selectedTask) return;
+
+    // Complete the task in the task manager
+    taskManager.completeTask(selectedTask.id);
+
+    // Refresh task list
+    refreshTasks();
+
+    // Close modal
+    setShowInteractionModal(false);
+    setSelectedTask(null);
+
+    // Play audio
+    audio.playNightmarePing(Math.min(totalTasks / 50, 1));
+  };
+
+  // Update stage based on task count
+  useEffect(() => {
+    if (totalTasks >= CHAOS_THRESHOLDS.STAGE_7_CHAOS) {
+      setStage('chaos');
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_6_AUTOMATION) {
+      setStage('automation');
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_5_MUTATION) {
+      setStage('mutating');
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_4_MULTIPLICATION) {
+      setStage('multiplying');
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_3_INTERACTIONS_BEGIN) {
+      setStage('resolving');
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_2_TASKS_APPEAR) {
+      setStage('started');
+    }
+  }, [totalTasks, stage]);
 
   // STAGE 5+: Cursor drift
   useEffect(() => {
@@ -175,41 +203,32 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
     }
   }, [stage]);
 
-  // STAGE 5+: Title mutations
-  useEffect(() => {
-    if (stage !== 'mutating' && stage !== 'automation' && stage !== 'chaos') return;
-
-    const mutationInterval = setInterval(() => {
-      setSubtasks((prev) => mutateTaskTitles(prev, titleMutations));
-    }, 4000);
-
-    return () => clearInterval(mutationInterval);
-  }, [stage]);
-
-  // STAGE 6: Auto-expand random subtask
+  // STAGE 6+: Auto-complete random tasks (automation chaos)
   useEffect(() => {
     if (stage !== 'automation' && stage !== 'chaos') return;
-    if (totalSubtasks >= CHAOS_THRESHOLDS.MAX_SUBTASKS) return;
+    if (totalTasks >= CHAOS_THRESHOLDS.ESCAPE_THRESHOLD) return;
 
-    const autoExpandInterval = setInterval(() => {
-      const unexpandedTasks = flattenUnexpanded(subtasks);
-      const randomSubtask = unexpandedTasks[Math.floor(Math.random() * unexpandedTasks.length)];
+    const autoCompleteInterval = setInterval(() => {
+      const completableTasks = taskManager.getCompletableTasks();
+      const randomTask = completableTasks[Math.floor(Math.random() * completableTasks.length)];
 
-      if (randomSubtask && !randomSubtask.expanded) {
-        handleResolveSubtask(randomSubtask.id);
+      if (randomTask) {
+        taskManager.completeTask(randomTask.id);
+        refreshTasks();
+        audio.playNightmarePing(Math.random() * 0.5);
       }
-    }, 5000); // Auto-expand every 5 seconds
+    }, stage === 'chaos' ? 3000 : 5000); // Faster in chaos mode
 
-    return () => clearInterval(autoExpandInterval);
-  }, [stage, totalSubtasks, subtasks]);
+    return () => clearInterval(autoCompleteInterval);
+  }, [stage, totalTasks, taskManager, refreshTasks, audio]);
 
   // STAGE 6+: Background pings
   useEffect(() => {
     if (stage === 'automation' || stage === 'chaos') {
-      audio.startNightmarePings(totalSubtasks);
+      audio.startNightmarePings(totalTasks);
       return () => audio.stopNightmarePings();
     }
-  }, [stage, totalSubtasks]);
+  }, [stage, totalTasks, audio]);
 
   // STAGE 7: Toast spam
   useEffect(() => {
@@ -228,142 +247,75 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
     }, 2500);
 
     return () => clearInterval(toastInterval);
-  }, [stage]);
+  }, [stage, audio]);
 
-  // Exit condition: 25+ subtasks
-  useEffect(() => {
-    if (totalSubtasks >= CHAOS_THRESHOLDS.MAX_SUBTASKS) {
-      setStage('ending');
-      audio.stopNightmarePings();
-    }
-  }, [totalSubtasks]);
-
-  // CHAOS FEATURE: Spawn random comments during automation/chaos stages
-  useEffect(() => {
-    if (stage !== 'automation' && stage !== 'chaos') return;
-
-    const commentInterval = setInterval(() => {
-      // Pick a random subtask and add a cursed comment
-      const allTasks = flattenUnexpanded(subtasks);
-      if (allTasks.length === 0) return;
-
-      const randomTask = allTasks[Math.floor(Math.random() * allTasks.length)];
-      const isDemonic = stage === 'chaos';
-      const characterKey = isDemonic
-        ? getDemonicCharacter(Math.random() > 0.5 ? 'sarah' : 'jerry')
-        : Math.random() > 0.5 ? 'sarah' : 'bot';
-
-      const newComment = {
-        author: characterKey,
-        text: getRandomComment(characterKey),
-        timestamp: 'just now',
-        isAuto: true,
-      };
-
-      setSubtasks((prev) =>
-        updateSubtaskById(prev, randomTask.id, (task) => ({
-          ...task,
-          comments: [...(task.comments || []), newComment],
-        }))
-      );
-    }, stage === 'chaos' ? 4000 : 8000); // Faster in chaos mode
-
-    return () => clearInterval(commentInterval);
-  }, [stage, subtasks]);
-
-  // Handle task click to open modal
-  const handleTaskClick = (task: Subtask) => {
-    setSelectedTask(task);
-
-    // Look up content from the database
-    if (task.contentKey) {
-      const content = acceptanceCriteriaContent[task.contentKey] ||
-                      subtaskContent[task.contentKey];
-      if (content) {
-        // Merge dynamic comments with initial comments
-        const mergedContent = {
-          ...content,
-          initialComments: [...content.initialComments, ...(task.comments || [])],
-        };
-        setSelectedTaskContent(mergedContent);
-      }
-    }
-  };
-
-  const handleCloseModal = () => {
-    setSelectedTask(null);
-    setSelectedTaskContent(null);
-  };
-
-  // Get button text based on chaos level and depth
-  const getWorkaroundButtonText = (level: number) => {
+  // Get button text based on task state
+  const getTaskButtonText = (task: Task) => {
     if (stage === 'chaos') {
-      return ['Give up', 'Just... try something', 'Why', 'HELP'][Math.min(level, 3)];
+      const texts = ['Attempt?', 'Try it', 'Click here', 'DO IT'];
+      return texts[task.depth % texts.length];
     }
-    if (stage === 'automation' || stage === 'mutating') {
-      return level > 2 ? 'Try anyway' : 'Find workaround';
-    }
-    return 'Find workaround';
+    // Always show "Attempt" - don't reveal blocked status
+    return 'Attempt';
   };
 
-  // Render subtasks recursively
-  const renderSubtask = (subtask: Subtask, level: number = 0) => {
+  // Render tasks
+  const renderTask = (task: Task) => {
     const showWiggle = stage === 'chaos';
     const avoidCursor = stage === 'automation' || stage === 'chaos';
-    const isRevealed = subtask.revealed;
-    const canResolve = !subtask.expanded && stage !== 'ending';
+    const isCompleted = task.status === 'completed';
+    const isDiscoveredBlocked = discoveredBlockedTasks.has(task.id);
+
+    // Don't render the root task in the list
+    if (task.id === 'root_task') return null;
+
+    // Determine border color
+    let borderColor = 'border-blue-500';
+    if (isCompleted) {
+      borderColor = 'border-green-500 opacity-50';
+    } else if (isDiscoveredBlocked) {
+      borderColor = 'border-orange-400/60'; // Subtle orange for discovered blocked tasks
+    }
 
     return (
       <div
-        key={subtask.id}
-        className={`ml-${level * 4} mb-2`}
+        key={task.id}
+        className="mb-2"
         style={{
           transform: avoidCursor
-            ? `translateX(${Math.sin(Date.now() / 1000 + level) * 8}px)`
+            ? `translateX(${Math.sin(Date.now() / 1000 + task.depth) * 8}px)`
             : undefined,
           transition: 'transform 0.3s ease',
         }}
       >
         <div
-          className={`bg-gray-800 border ${
-            subtask.isAcceptanceCriteria ? 'border-blue-500' : 'border-red-500'
-          } rounded p-3 ${showWiggle ? 'wiggle' : ''}`}
+          className={`bg-gray-800 border ${borderColor} rounded p-3 ${showWiggle ? 'wiggle' : ''}`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                {/* Show warning icon if workaround was attempted (spawned children) */}
-                {subtask.resolved && <span className="text-yellow-500">⚠</span>}
-                <button
-                  onClick={() => handleTaskClick(subtask)}
-                  className="text-white text-sm font-medium hover:text-blue-300 transition-colors text-left underline decoration-dotted"
-                >
-                  {subtask.title}
-                </button>
-                {/* Show comment count badge if comments exist */}
-                {subtask.comments && subtask.comments.length > 0 && (
-                  <span className="text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 animate-pulse">
-                    {subtask.comments.length}
-                  </span>
-                )}
+                {/* Status icon - only show completed */}
+                {isCompleted && <span className="text-green-500">✓</span>}
+
+                <div className="text-white text-sm font-medium">
+                  {task.title}
+                </div>
               </div>
 
-              {/* Show blocker text only if revealed */}
-              {isRevealed && (
-                <p className="text-red-400 text-xs mt-1">
-                  BLOCKED: {subtask.status}
-                </p>
-              )}
+              {/* Description */}
+              <p className="text-xs mt-1 text-gray-400">
+                {task.description}
+              </p>
             </div>
 
-            {/* Workaround button (only show after blockers are revealed) */}
-            {canResolve && stage !== 'initial' && stage !== 'started' && isRevealed && (
+            {/* Action button - always show for non-completed tasks */}
+            {!isCompleted && (
               <button
-                onClick={() => handleResolveSubtask(subtask.id)}
+                onClick={() => handleTaskClick(task)}
                 className={`px-3 py-1 text-white text-xs rounded transition-colors ${
                   stage === 'chaos'
                     ? 'bg-red-600 hover:bg-red-500'
-                    : 'bg-yellow-600 hover:bg-yellow-500'
+                    : 'bg-blue-600 hover:bg-blue-500'
                 }`}
                 style={{
                   transform: cursorDrift > 0
@@ -373,28 +325,36 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
                     : undefined,
                 }}
               >
-                {getWorkaroundButtonText(level)}
+                {getTaskButtonText(task)}
               </button>
             )}
           </div>
         </div>
-
-        {/* Render children */}
-        {subtask.children && subtask.children.length > 0 && (
-          <div className="mt-2">
-            {subtask.children.map((child) => renderSubtask(child, level + 1))}
-          </div>
-        )}
       </div>
     );
   };
 
-  // Main action button text and handler
-  const getMainButton = () => {
-    if (stage === 'ending') {
-      return null; // Show ending buttons instead
-    }
+  // Escape hatch handlers
+  const handleBurnItDown = () => {
+    taskManager.executeBurnItDown();
+    onComplete();
+  };
 
+  const handleDelegate = () => {
+    taskManager.executeDelegate();
+    onLeave();
+  };
+
+  const handleAssimilate = () => {
+    taskManager.executeAssimilate('Senior Bureaucracy Facilitator');
+    onComplete();
+  };
+
+  // Check if we should show escape hatches
+  const showEscapeHatches = taskManager.shouldShowEscapeHatches();
+
+  // Main action button
+  const getMainButton = () => {
     if (stage === 'initial') {
       return {
         text: 'Start Task',
@@ -403,29 +363,17 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
       };
     }
 
-    if (stage === 'started') {
-      return {
-        text: 'View Details',
-        onClick: handleViewDetails,
-        color: 'bg-blue-600 hover:bg-blue-500',
-      };
-    }
-
-    if (stage === 'blockers-revealed') {
-      return {
-        text: 'Resolve Blockers',
-        onClick: handleResolveBlockers,
-        color: 'bg-green-600 hover:bg-green-500',
-      };
-    }
-
-    // Stage 3+: Show disabled "Mark Complete" button
+    // After started, show disabled button
     return {
-      text: 'Mark Complete',
+      text: rootTask?.status === 'completed' ? 'Task Complete!' : 'Attempt Task',
       onClick: () => {},
-      color: 'bg-gray-500 cursor-not-allowed',
-      disabled: true,
-      subtitle: 'Complete all subtasks first',
+      color: rootTask?.status === 'completed'
+        ? 'bg-green-600'
+        : 'bg-gray-500 cursor-not-allowed',
+      disabled: rootTask?.status !== 'completed',
+      subtitle: rootTask?.status !== 'completed'
+        ? `${totalTasks} action${totalTasks !== 1 ? 's' : ''} required first`
+        : undefined,
     };
   };
 
@@ -438,37 +386,40 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
       }`}
     >
       <div className="max-w-3xl w-full p-8">
-        {/* Original Task Card */}
-        <div className="bg-white rounded-lg shadow-2xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Refactor Notifications System
-            </h2>
+        {/* Q4 Compliance Lock Notice Card */}
+        <div className="bg-gradient-to-br from-red-600 to-orange-600 rounded-lg shadow-2xl p-6 mb-6 border-4 border-red-700">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="text-6xl">🔒</div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-1">
+                Q4 Compliance Training Due
+              </h2>
+              <p className="text-red-100 text-sm">
+                Board access suspended until quarterly requirements are completed
+              </p>
+            </div>
             {stage !== 'initial' && (
-              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded">
-                {totalSubtasks} subtask{totalSubtasks !== 1 ? 's' : ''}
-              </span>
+              <div className="text-right">
+                <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-0.5 rounded border border-white/30">
+                  BLOCKED
+                </span>
+                <p className="text-xs text-red-100 mt-1">
+                  {totalTasks} action{totalTasks !== 1 ? 's' : ''}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Status badge */}
-          {stage === 'initial' && (
-            <div className="mb-4">
-              <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                Ready to Start
-              </span>
-            </div>
-          )}
-
-          {/* AI Helper Message */}
-          {showAIHelper && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded flex items-center gap-2">
-              <span className="text-lg">🤖</span>
-              <p className="text-sm text-blue-900">
-                I've created subtasks to help you resolve these blockers!
+          <div className="bg-white/10 backdrop-blur-sm rounded p-4 border border-white/20 mb-4">
+            <p className="text-white text-sm mb-2">
+              <strong>Access Restricted:</strong> {rootTask?.description}
+            </p>
+            {rootTask?.flavorText && (
+              <p className="text-red-100 text-xs">
+                {rootTask.flavorText}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Main action button */}
           {mainButton && (
@@ -476,40 +427,68 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
               <button
                 onClick={mainButton.onClick}
                 disabled={mainButton.disabled}
-                className={`w-full ${mainButton.color} text-white font-semibold py-3 px-6 rounded-lg transition-colors`}
+                className={`w-full ${mainButton.color} text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-lg`}
               >
                 {mainButton.text}
               </button>
               {mainButton.subtitle && (
-                <p className="text-sm text-gray-500 text-center mt-2">
+                <p className="text-sm text-white/80 text-center mt-2">
                   {mainButton.subtitle}
                 </p>
               )}
             </div>
           )}
-
-          {/* Ending buttons */}
-          {stage === 'ending' && (
-            <div className="space-y-3">
-              <button
-                onClick={onComplete}
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                Burn it all down and mark complete anyway
-              </button>
-              <button
-                onClick={onLeave}
-                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                Abandon this task
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Blocking Tasks Section - Two Column Layout */}
+        {tasks.length > 1 && (
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column: Required Actions */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-white text-lg font-semibold mb-2">
+                  Required Actions:
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Complete the following to proceed with your task
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {tasks
+                  .filter((task) => task.status !== 'completed' && task.id !== 'root_task')
+                  .map((task) => renderTask(task))}
+              </div>
+            </div>
+
+            {/* Right Column: Completed */}
+            <div>
+              <div className="mb-4">
+                <h3 className="text-white text-lg font-semibold mb-2">
+                  Completed:
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Successfully finished actions
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {tasks
+                  .filter((task) => task.status === 'completed' && task.id !== 'root_task')
+                  .map((task) => renderTask(task))}
+                {tasks.filter((task) => task.status === 'completed' && task.id !== 'root_task').length === 0 && (
+                  <div className="text-gray-500 text-sm italic">
+                    No tasks completed yet
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Escape Messages */}
         {stage === 'mutating' && (
-          <div className="text-center mb-4">
+          <div className="text-center mt-6 mb-4">
             <p className="text-red-500 text-sm opacity-70">
               You cannot escape until this is resolved
             </p>
@@ -517,16 +496,11 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
         )}
 
         {stage === 'automation' && (
-          <div className="text-center mb-4">
+          <div className="text-center mt-6 mb-4">
             <p className="text-red-500 text-base font-bold glitch">
               You cannot escape until this is resolved
             </p>
           </div>
-        )}
-
-        {/* Subtasks */}
-        {subtasks.length > 0 && (
-          <div className="space-y-2">{subtasks.map((s) => renderSubtask(s))}</div>
         )}
 
         {/* Toast Notifications */}
@@ -541,14 +515,92 @@ export const NightmareZone = ({ onComplete, onLeave, audio }: NightmareZoneProps
           ))}
         </div>
 
-        {/* Task Detail Modal */}
-        {selectedTask && (
-          <TaskDetailModal
-            task={selectedTask}
-            content={selectedTaskContent}
-            onClose={handleCloseModal}
-            stage={stage}
+        {/* Interaction Modal */}
+        {selectedTask && showInteractionModal && taskManager.getTaskInteraction(selectedTask.id) && (
+          <InteractionModal
+            interaction={taskManager.getTaskInteraction(selectedTask.id)!}
+            taskTitle={selectedTask.title}
+            isOpen={showInteractionModal}
+            onClose={() => {
+              setShowInteractionModal(false);
+              setSelectedTask(null);
+            }}
+            onComplete={handleInteractionComplete}
           />
+        )}
+
+        {/* Blocked Task Modal */}
+        {showBlockedModal && selectedTask && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black bg-opacity-70">
+            <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md mx-4">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Unable to proceed
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowBlockedModal(false);
+                    setSelectedTask(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  {selectedTask.title}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {blockedReason}
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowBlockedModal(false);
+                    setSelectedTask(null);
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors"
+                >
+                  Understood
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fixed Emergency Escape Panel */}
+        {showEscapeHatches && (
+          <div className="fixed bottom-8 right-8 z-[70]">
+            <div className="bg-red-600 rounded-lg shadow-2xl p-4 border-4 border-red-800 animate-pulse">
+              <p className="text-white text-center font-bold mb-3 text-lg">
+                🚨 EMERGENCY ESCAPE 🚨
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={handleBurnItDown}
+                  className="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
+                >
+                  🔥 BURN IT ALL DOWN
+                </button>
+                <button
+                  onClick={handleDelegate}
+                  className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
+                >
+                  👋 DELEGATE TO COWORKER
+                </button>
+                <button
+                  onClick={handleAssimilate}
+                  className="w-full bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
+                >
+                  🤝 JOIN THE BUREAUCRACY
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
