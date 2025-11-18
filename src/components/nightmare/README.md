@@ -32,17 +32,34 @@ Modal displaying satirical bureaucratic reasons why a task is blocked.
 - `blockedReason`: string - Bureaucratic explanation
 - `onClose`: () => void - Handler to dismiss modal
 
+### TaskItem
+Individual task card rendering with all visual effects.
+
+**Props:**
+- `task`: Task - The task to render
+- `stage`: GameStage - Current game stage for styling
+- `cursorDrift`: number - Amount of cursor drift to apply
+- `isDiscoveredBlocked`: boolean - Whether this blocked task has been clicked
+- `onTaskClick`: (task: Task) => void - Handler when task is clicked
+
 ## Refactoring Progress
 
 - **Original NightmareZone**: 613 lines
-- **After extractions**: 538 lines
-- **Reduction**: 75 lines (-12%)
+- **After extractions**: 466 lines
+- **Reduction**: 147 lines (-24%)
+
+### Extracted Components
+1. **EscapeHatchPanel** (~30 lines extracted)
+2. **ToastManager** (~20 lines extracted)
+3. **BlockedTaskModal** (~35 lines extracted)
+4. **TaskItem** (~60 lines extracted)
+5. **useCursorDrift hook** (~10 lines extracted)
 
 ## Future Extractions
 
 Components still to extract from NightmareZone:
-- TaskListView (~100 lines) - Task rendering and layout
-- ChaosEffects (hook) (~80 lines) - Cursor drift and visual chaos
-- Task button logic and rendering
+- Stage progression logic
+- Auto-completion automation
+- Main action button logic
 
 Target: Reduce NightmareZone to ~200-250 lines (orchestrator only)
