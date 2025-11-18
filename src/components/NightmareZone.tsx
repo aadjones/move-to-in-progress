@@ -133,16 +133,16 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
         stage === 'chaos' ? 'flicker' : ''
       }`}
     >
-      <div className="max-w-3xl w-full p-8">
+      <div className="max-w-3xl w-full p-4 sm:p-8">
         {/* Q4 Compliance Lock Notice Card */}
-        <div className="bg-gradient-to-br from-red-600 to-orange-600 rounded-lg shadow-2xl p-6 mb-6 border-4 border-red-700">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-6xl">🔒</div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-white mb-1">
+        <div className="bg-gradient-to-br from-red-600 to-orange-600 rounded-lg shadow-2xl p-4 sm:p-6 mb-4 sm:mb-6 border-4 border-red-700">
+          <div className="flex items-center gap-2 sm:gap-4 mb-4">
+            <div className="text-4xl sm:text-6xl">🔒</div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-white mb-1">
                 Q4 Compliance Training Due
               </h2>
-              <p className="text-red-100 text-sm">
+              <p className="text-red-100 text-xs sm:text-sm">
                 Board access suspended until quarterly requirements are completed
               </p>
             </div>
@@ -190,14 +190,14 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
 
         {/* Blocking Tasks Section - Two Column Layout */}
         {tasks.length > 1 && (
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Left Column: Required Actions */}
             <div>
               <div className="mb-4">
-                <h3 className="text-white text-lg font-semibold mb-2">
+                <h3 className="text-white text-base sm:text-lg font-semibold mb-2">
                   Required Actions:
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-xs sm:text-sm">
                   Complete the following to proceed with your task
                 </p>
               </div>
@@ -221,10 +221,10 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
             {/* Right Column: Completed */}
             <div>
               <div className="mb-4">
-                <h3 className="text-white text-lg font-semibold mb-2">
+                <h3 className="text-white text-base sm:text-lg font-semibold mb-2">
                   Completed:
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-xs sm:text-sm">
                   Successfully finished actions
                 </p>
               </div>

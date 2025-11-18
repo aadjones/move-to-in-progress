@@ -30,13 +30,13 @@ describe('useCursorDrift', () => {
 
   it('updates drift when stage changes', () => {
     const { result, rerender } = renderHook(
-      ({ stage }) => useCursorDrift(stage),
-      { initialProps: { stage: 'initial' as const } }
+      ({ stage }: { stage: 'initial' | 'chaos' }) => useCursorDrift(stage),
+      { initialProps: { stage: 'initial' as 'initial' | 'chaos' } }
     );
 
     expect(result.current).toBe(0);
 
-    rerender({ stage: 'chaos' });
+    rerender({ stage: 'chaos' as 'initial' | 'chaos' });
     expect(result.current).toBe(50);
   });
 });

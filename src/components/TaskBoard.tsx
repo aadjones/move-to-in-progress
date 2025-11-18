@@ -86,20 +86,20 @@ export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-8"
+      className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4 sm:p-8"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       style={{ userSelect: dragState.isDragging ? 'none' : 'auto' }}
     >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">TaskFlow</h1>
-          <p className="text-gray-600">Sprint 14 • Week of Nov 16</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">TaskFlow</h1>
+          <p className="text-sm sm:text-base text-gray-600">Sprint 14 • Week of Nov 16</p>
         </div>
 
         {/* Board */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* To Do Column */}
           <div
             className="bg-white/50 backdrop-blur-sm rounded-xl p-4"
