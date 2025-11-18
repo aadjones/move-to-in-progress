@@ -5,6 +5,8 @@
  * Tasks escalate through 4 patterns: Approval, Circular, Documentation, Compliance
  */
 
+import type { InteractionType } from '../interactions/types';
+
 export type Pattern = 'approval' | 'circular' | 'documentation' | 'compliance';
 
 export type TaskStatus = 'pending' | 'in_progress' | 'blocked' | 'completed';
@@ -96,7 +98,7 @@ export interface Task {
   spawnsOnComplete: TaskSpawnRule[];
 
   // Interaction (only for completable tasks)
-  interactionType?: string; // Reference to interaction type (will define separately)
+  interactionType?: InteractionType; // The interaction required to complete this task
   interactionData?: unknown; // Specific data for the interaction
 
   // Late game options

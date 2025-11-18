@@ -55,9 +55,7 @@ export class TaskManager {
     blocker.spawnsOnComplete = generateSpawnRules(blocker.pattern, blocker.depth, this.graph.config);
 
     // Assign interaction
-    blocker.interactionType = JSON.stringify(
-      getInteractionForTask(blocker.archetype, blocker.depth)
-    );
+    blocker.interactionType = getInteractionForTask(blocker.archetype, blocker.depth);
 
     this.graph.tasks.set(blocker.id, blocker);
     rootTask.blockedBy.push(blocker.id);
@@ -136,9 +134,7 @@ export class TaskManager {
 
       // Assign interaction if it doesn't have one
       if (!task.interactionType) {
-        task.interactionType = JSON.stringify(
-          getInteractionForTask(task.archetype, task.depth)
-        );
+        task.interactionType = getInteractionForTask(task.archetype, task.depth);
       }
     }
   }
@@ -168,17 +164,13 @@ export class TaskManager {
     for (const child of children) {
       // Assign interaction for completable tasks
       if (child.isCompletable) {
-        child.interactionType = JSON.stringify(
-          getInteractionForTask(child.archetype, child.depth)
-        );
+        child.interactionType = getInteractionForTask(child.archetype, child.depth);
       } else {
         // Generate blocking tasks for blocked tasks
         const blockers = generateBlockingTasks(child, this.graph.config, 1);
 
         for (const blocker of blockers) {
-          blocker.interactionType = JSON.stringify(
-            getInteractionForTask(blocker.archetype, blocker.depth)
-          );
+          blocker.interactionType = getInteractionForTask(blocker.archetype, blocker.depth);
           this.graph.tasks.set(blocker.id, blocker);
           child.blockedBy.push(blocker.id);
 
@@ -272,11 +264,6 @@ export class TaskManager {
     const task = this.getTask(taskId);
     if (!task || !task.interactionType) return null;
 
-    try {
-      return JSON.parse(task.interactionType) as InteractionType;
-    } catch (e) {
-      console.error('Failed to parse interaction type:', e);
-      return null;
-    }
+    return task.interactionType;
   }
 }
