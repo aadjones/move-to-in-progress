@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Task } from '../types';
+import { ANIMATION_CONFIG } from '../config/animations';
 
 interface FallingCardProps {
   task: Task;
   onLanded: () => void;
+  initialPosition: { x: number; y: number };
+  cardWidth: number;
 }
 
-export const FallingCard = ({ task, onLanded }: FallingCardProps) => {
+export const FallingCard = ({ task, onLanded, initialPosition, cardWidth }: FallingCardProps) => {
   const [isHesitating, setIsHesitating] = useState(true);
   const [isFalling, setIsFalling] = useState(false);
 
@@ -15,12 +18,12 @@ export const FallingCard = ({ task, onLanded }: FallingCardProps) => {
     const hesitateTimer = setTimeout(() => {
       setIsHesitating(false);
       setIsFalling(true);
-    }, 300);
+    }, ANIMATION_CONFIG.falling.hesitationDuration);
 
     // Land at the bottom after fall animation
     const landTimer = setTimeout(() => {
       onLanded();
-    }, 2500);
+    }, ANIMATION_CONFIG.falling.cardFallDuration * 1000);
 
     return () => {
       clearTimeout(hesitateTimer);
@@ -30,15 +33,13 @@ export const FallingCard = ({ task, onLanded }: FallingCardProps) => {
 
   return (
     <div
-      className={`fixed left-1/2 -translate-x-1/2 z-50 w-80 transition-all ${
-        isHesitating
-          ? 'top-[40%] scale-95'
-          : isFalling
-          ? 'top-[3000px]'
-          : ''
-      }`}
+      className="fixed z-50 transition-all"
       style={{
-        transitionDuration: isHesitating ? '0.3s' : '2.5s',
+        left: isHesitating ? initialPosition.x : initialPosition.x,
+        top: isHesitating ? initialPosition.y : isFalling ? `${ANIMATION_CONFIG.falling.cardFallDistance}px` : initialPosition.y,
+        width: `${cardWidth}px`,
+        transform: isHesitating ? 'scale(0.95)' : 'scale(1)',
+        transitionDuration: isHesitating ? `${ANIMATION_CONFIG.falling.hesitationDuration / 1000}s` : `${ANIMATION_CONFIG.falling.cardFallDuration}s`,
         transitionTimingFunction: isHesitating
           ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
           : 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -58,6 +59,13 @@ export const FallingCard = ({ task, onLanded }: FallingCardProps) => {
             ))}
           </div>
         </div>
+
+        {/* Description */}
+        {task.description && (
+          <p className="text-xs text-gray-600 mt-2 mb-3 line-clamp-2">
+            {task.description}
+          </p>
+        )}
 
         <div className="flex items-center justify-between mt-3">
           {task.assignee && (

@@ -19,7 +19,7 @@ class AudioManager {
   private reverb: Tone.Reverb | null = null;
   private distortion: Tone.Distortion | null = null;
   private initialized = false;
-  private nightmareInterval: number | null = null;
+  private nightmareEventId: number | null = null;
 
   async initialize() {
     if (this.initialized) return;
@@ -62,9 +62,12 @@ class AudioManager {
       return;
     }
 
+    // Always use Tone.now() for absolute timing to avoid conflicts
+    const now = Tone.now();
     this.synth.triggerAttackRelease(
       AUDIO_CONFIG.PING_FREQUENCY,
-      AUDIO_CONFIG.PING_DURATION
+      AUDIO_CONFIG.PING_DURATION,
+      now + 0.01
     );
   }
 
@@ -84,34 +87,47 @@ class AudioManager {
       this.reverb.wet.value = glitchIntensity * 0.5;
     }
 
+    // Use absolute timing
+    const now = Tone.now();
     this.synth.triggerAttackRelease(
       AUDIO_CONFIG.PING_FREQUENCY,
       AUDIO_CONFIG.PING_DURATION * (1 + glitchIntensity),
-      Tone.now()
+      now + 0.01
     );
   }
 
   // Play distorted ping for nightmare mode (Phase 4)
-  playNightmarePing(chaosLevel: number) {
+  playNightmarePing(chaosLevel: number, time?: number) {
     if (!this.synth || !this.distortion || !this.initialized) return;
 
-    // Increase distortion with chaos level
-    const distortionAmount = Math.min(chaosLevel * 0.1, AUDIO_CONFIG.DISTORTION_AMOUNT);
-    this.distortion.distortion = distortionAmount;
+    // Ensure time is always in the future relative to Tone's current time
+    const now = Tone.now();
+    let when: number;
 
-    // Add reverb
-    if (this.reverb) {
-      this.reverb.wet.value = Math.min(chaosLevel * 0.05, 0.7);
+    if (time !== undefined) {
+      // If Transport provides a time, ensure it's at least 0.01s ahead of now
+      when = Math.max(time, now + 0.01);
+    } else {
+      when = now + 0.01;
     }
 
     // Slightly randomize frequency for unease
     const frequency = AUDIO_CONFIG.PING_FREQUENCY + (Math.random() - 0.5) * 100;
+    const duration = AUDIO_CONFIG.PING_DURATION * (1 + chaosLevel * 0.1);
 
-    this.synth.triggerAttackRelease(
-      frequency,
-      AUDIO_CONFIG.PING_DURATION * (1 + chaosLevel * 0.1),
-      Tone.now()
-    );
+    // Set effect parameters immediately (these are not scheduled)
+    const distortionAmount = Math.min(chaosLevel * 0.1, AUDIO_CONFIG.DISTORTION_AMOUNT);
+    const reverbAmount = Math.min(chaosLevel * 0.05, 0.7);
+
+    if (this.distortion) {
+      this.distortion.distortion = distortionAmount;
+    }
+    if (this.reverb) {
+      this.reverb.wet.value = reverbAmount;
+    }
+
+    // Trigger the note
+    this.synth.triggerAttackRelease(frequency, duration, when);
   }
 
   // Play "knock knock" notification sound for toast messages
@@ -132,7 +148,7 @@ class AudioManager {
       this.pitchShift.pitch = 0;
     }
 
-    // Play double knock pattern: knock-knock
+    // Play double knock pattern using absolute timing
     const now = Tone.now();
     AUDIO_CONFIG.KNOCK_FREQUENCIES.forEach((freq, i) => {
       this.synth?.triggerAttackRelease(
@@ -143,30 +159,36 @@ class AudioManager {
     });
   }
 
-  // Start nightmare mode repeating pings
+  // Start nightmare mode repeating pings using Tone.Transport
   startNightmarePings(subtaskCount: number) {
-    this.stopNightmarePings(); // Clear any existing interval
+    this.stopNightmarePings(); // Clear any existing event
 
     // Calculate interval based on subtask count (faster with more subtasks)
     const intervalRange =
       AUDIO_CONFIG.NIGHTMARE_BASE_INTERVAL - AUDIO_CONFIG.NIGHTMARE_FAST_INTERVAL;
     const normalizedCount = Math.min(subtaskCount / 20, 1); // 0 to 1
-    const interval =
+    const intervalMs =
       AUDIO_CONFIG.NIGHTMARE_BASE_INTERVAL - intervalRange * normalizedCount;
 
-    this.nightmareInterval = setInterval(() => {
-      this.playNightmarePing(subtaskCount);
-    }, interval);
+    // Convert ms to seconds for Tone.Transport
+    const intervalSec = intervalMs / 1000;
 
-    // Play immediately on start
-    this.playNightmarePing(subtaskCount);
+    // Start the transport if not already started
+    if (Tone.Transport.state !== 'started') {
+      Tone.Transport.start();
+    }
+
+    // Use Tone.Transport.scheduleRepeat - Transport provides precise timing
+    this.nightmareEventId = Tone.Transport.scheduleRepeat((time) => {
+      this.playNightmarePing(subtaskCount, time);
+    }, intervalSec);
   }
 
   // Stop nightmare pings
   stopNightmarePings() {
-    if (this.nightmareInterval) {
-      clearInterval(this.nightmareInterval);
-      this.nightmareInterval = null;
+    if (this.nightmareEventId !== null) {
+      Tone.Transport.clear(this.nightmareEventId);
+      this.nightmareEventId = null;
     }
   }
 
@@ -181,9 +203,12 @@ class AudioManager {
       this.distortion.distortion = 0.5;
     }
 
+    // Use absolute timing
+    const now = Tone.now();
     this.synth.triggerAttackRelease(
       AUDIO_CONFIG.PING_FREQUENCY / 2,
-      '2n' // Half note duration
+      '2n', // Half note duration
+      now + 0.01
     );
   }
 

@@ -2,16 +2,23 @@ import { Task } from '../types';
 
 interface TaskCardProps {
   task: Task;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;
+  isHighlighted?: boolean;
 }
 
-export const TaskCard = ({ task, onMouseDown, isDragging, style }: TaskCardProps) => {
+export const TaskCard = ({ task, onMouseDown, isDragging, style, isHighlighted }: TaskCardProps) => {
+  const isDraggable = onMouseDown !== undefined;
+
   return (
     <div
-      className={`bg-white rounded-lg shadow-md p-4 cursor-grab active:cursor-grabbing transition-transform ${
-        isDragging ? 'opacity-50' : 'hover:shadow-lg'
+      className={`bg-white rounded-lg shadow-md p-4 transition-all ${
+        isDragging ? 'invisible' : 'hover:shadow-lg'
+      } ${
+        isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default opacity-60'
+      } ${
+        isHighlighted ? 'ring-2 ring-purple-400 ring-opacity-50 shadow-lg' : ''
       }`}
       onMouseDown={onMouseDown}
       style={style}
@@ -29,6 +36,13 @@ export const TaskCard = ({ task, onMouseDown, isDragging, style }: TaskCardProps
           ))}
         </div>
       </div>
+
+      {/* Description */}
+      {task.description && (
+        <p className="text-xs text-gray-600 mt-2 mb-3 line-clamp-2">
+          {task.description}
+        </p>
+      )}
 
       <div className="flex items-center justify-between mt-3">
         {task.assignee && (

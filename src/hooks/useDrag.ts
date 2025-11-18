@@ -4,13 +4,15 @@ export interface DragState {
   isDragging: boolean;
   draggedItem: string | null;
   position: { x: number; y: number };
+  cardDimensions: { width: number; height: number };
 }
 
-export const useDrag = (onDrop: (itemId: string, column: string) => void) => {
+export const useDrag = (onDrop: (itemId: string, column: string, dropPosition: { x: number; y: number }, cardWidth: number) => void) => {
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     draggedItem: null,
     position: { x: 0, y: 0 },
+    cardDimensions: { width: 0, height: 0 },
   });
 
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -29,6 +31,7 @@ export const useDrag = (onDrop: (itemId: string, column: string) => void) => {
       isDragging: true,
       draggedItem: itemId,
       position: { x: e.clientX, y: e.clientY },
+      cardDimensions: { width: rect.width, height: rect.height },
     });
   }, []);
 
@@ -54,13 +57,23 @@ export const useDrag = (onDrop: (itemId: string, column: string) => void) => {
       const columnName = column?.getAttribute('data-column');
 
       if (columnName) {
-        onDrop(dragState.draggedItem, columnName);
+        // Pass the actual drop position and card width
+        onDrop(
+          dragState.draggedItem,
+          columnName,
+          {
+            x: dragState.position.x - cardOffset.current.x,
+            y: dragState.position.y - cardOffset.current.y
+          },
+          dragState.cardDimensions.width
+        );
       }
 
       setDragState({
         isDragging: false,
         draggedItem: null,
         position: { x: 0, y: 0 },
+        cardDimensions: { width: 0, height: 0 },
       });
     },
     [dragState, onDrop]

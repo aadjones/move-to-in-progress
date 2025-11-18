@@ -1,10 +1,11 @@
 export interface Task {
   id: string;
   title: string;
-  column: 'todo' | 'inProgress';
+  column: 'todo' | 'inProgress' | 'done';
   assignee?: string;
   tags?: string[];
   timestamp?: string;
+  description?: string;
 }
 
 export interface TaskComment {

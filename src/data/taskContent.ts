@@ -16,12 +16,13 @@ export interface TaskContent {
 // Main task content
 export const mainTaskContent: TaskContent = {
   title: 'Refactor Notifications System',
-  description: `Update our notification system to support the new real-time requirements discussed in Q3 planning. This will improve user engagement and reduce notification latency.
+  description: `Refactor the push notification service to support real-time delivery requirements from the Q3 roadmap. Should be straightforward—the architecture is already documented.
 
-See Confluence documentation for full technical specifications and architecture diagrams.
+Estimated: 3 story points
+Sprint goal: Complete before Friday standup
 
 **Priority:** High
-**Target Sprint:** Q4 Sprint 3`,
+**Target Sprint:** Sprint 14`,
 
   descriptionMutations: [
     // Stage 5: Slight corruption
