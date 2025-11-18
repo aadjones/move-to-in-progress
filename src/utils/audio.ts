@@ -1,17 +1,5 @@
 import * as Tone from 'tone';
-
-// Audio constants
-const AUDIO_CONFIG = {
-  PING_FREQUENCY: 800, // Hz - Slack-like notification ping
-  PING_DURATION: 0.1, // seconds
-  KNOCK_FREQUENCIES: [400, 500], // Two-tone knock pattern
-  KNOCK_TIMING: [0, 0.08], // Quick double knock
-  FALLING_PITCH_SHIFT_MAX: -12, // semitones down
-  NIGHTMARE_BASE_INTERVAL: 5000, // ms between pings
-  NIGHTMARE_FAST_INTERVAL: 1000, // ms at max chaos
-  REVERB_DECAY: 2, // seconds
-  DISTORTION_AMOUNT: 0.8,
-} as const;
+import { AUDIO_CONFIG } from '../config/gameConfig';
 
 class AudioManager {
   private synth: Tone.Synth | null = null;

@@ -4,20 +4,7 @@ import type { Task } from '../taskGraph/types';
 import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
 import { toastMessages } from '../data/subtasks';
-
-// Adapted thresholds for new task system
-const CHAOS_THRESHOLDS = {
-  STAGE_2_TASKS_APPEAR: 1,        // Tasks start appearing
-  STAGE_3_INTERACTIONS_BEGIN: 3,  // Start requiring interactions
-  STAGE_4_MULTIPLICATION: 8,      // Tasks multiply faster
-  STAGE_5_MUTATION: 12,           // Cursor drift, visual chaos
-  STAGE_6_AUTOMATION: 18,         // Auto-expansion, overwhelming
-  STAGE_7_CHAOS: 24,              // Full chaos, toast spam
-  ESCAPE_THRESHOLD: 30,           // Escape hatches available
-  CURSOR_DRIFT_SUBTLE: 15,        // More noticeable
-  CURSOR_DRIFT_OBVIOUS: 30,       // Much harder to click
-  CURSOR_DRIFT_INSANE: 50,        // Nearly impossible
-} as const;
+import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
