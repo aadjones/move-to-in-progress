@@ -6,6 +6,8 @@ import type { InteractionResult } from '../interactions/types';
 import { toastMessages } from '../data/subtasks';
 import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
+import { ToastManager } from './nightmare/ToastManager';
+import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
@@ -26,7 +28,6 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [cursorDrift, setCursorDrift] = useState(0);
-  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [showBlockedModal, setShowBlockedModal] = useState(false);
@@ -219,24 +220,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
     }
   }, [stage, totalTasks, audio]);
 
-  // STAGE 7: Toast spam
-  useEffect(() => {
-    if (stage !== 'chaos') return;
-
-    const toastInterval = setInterval(() => {
-      const message = toastMessages[Math.floor(Math.random() * toastMessages.length)];
-      const newToast = { id: Date.now(), message };
-      setToasts((prev) => [...prev, newToast]);
-
-      audio.playSlackKnock();
-
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
-      }, 3000);
-    }, 2500);
-
-    return () => clearInterval(toastInterval);
-  }, [stage, audio]);
+  // Toast spam is now handled by ToastManager component
 
   // Get button text based on task state
   const getTaskButtonText = (task: Task) => {
@@ -510,16 +494,11 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
         )}
 
         {/* Toast Notifications */}
-        <div className="fixed top-4 right-4 space-y-2 z-[60] max-w-sm">
-          {toasts.map((toast) => (
-            <div
-              key={toast.id}
-              className="bg-white rounded-lg shadow-lg p-4 animate-slide-in border-l-4 border-blue-500"
-            >
-              <p className="text-sm text-gray-800">{toast.message}</p>
-            </div>
-          ))}
-        </div>
+        <ToastManager
+          active={stage === 'chaos'}
+          messages={toastMessages}
+          onToastAppear={audio.playSlackKnock}
+        />
 
         {/* Interaction Modal */}
         {selectedTask && showInteractionModal && taskManager.getTaskInteraction(selectedTask.id) && (
@@ -536,47 +515,15 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
         )}
 
         {/* Blocked Task Modal */}
-        {showBlockedModal && selectedTask && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black bg-opacity-70">
-            <div className="bg-white rounded-lg shadow-2xl p-6 max-w-md mx-4">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Unable to proceed
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowBlockedModal(false);
-                    setSelectedTask(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  {selectedTask.title}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {blockedReason}
-                </p>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    setShowBlockedModal(false);
-                    setSelectedTask(null);
-                  }}
-                  className="px-4 py-2 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors"
-                >
-                  Understood
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <BlockedTaskModal
+          visible={showBlockedModal && selectedTask !== null}
+          taskTitle={selectedTask?.title || ''}
+          blockedReason={blockedReason}
+          onClose={() => {
+            setShowBlockedModal(false);
+            setSelectedTask(null);
+          }}
+        />
 
         {/* Fixed Emergency Escape Panel */}
         <EscapeHatchPanel
