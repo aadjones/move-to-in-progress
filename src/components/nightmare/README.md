@@ -45,8 +45,8 @@ Individual task card rendering with all visual effects.
 ## Refactoring Progress
 
 - **Original NightmareZone**: 613 lines
-- **After all extractions**: 420 lines
-- **Reduction**: 193 lines (-31%)
+- **After all extractions**: 318 lines
+- **Reduction**: 295 lines (-48%)
 
 ### Extracted Components
 1. **EscapeHatchPanel** (~30 lines extracted)
@@ -58,15 +58,17 @@ Individual task card rendering with all visual effects.
 5. **useCursorDrift** (~10 lines extracted)
 6. **useStageProgression** (~25 lines extracted)
 7. **useTaskAutomation** (~45 lines extracted)
+8. **useEscapeHatches** (~20 lines extracted)
+9. **useMainButton** (~25 lines extracted)
+
+### Extracted Utilities
+10. **getBlockedReason** (~70 lines extracted)
 
 ## Current State
 
-NightmareZone is now **420 lines** - well on the way to the target of 200-250 lines for orchestrator-only code. The component is now focused on:
+NightmareZone is now **318 lines** - closing in on the target of 200-250 lines for orchestrator-only code. The component is now focused purely on:
 - UI orchestration and layout
-- Event handling and business logic
+- Event handling coordination
 - Rendering extracted components
 
-Further refactoring opportunities:
-- Extract main action button logic (~20-30 lines)
-- Extract blocked reason generation (~70 lines)
-- Extract escape hatch handlers (~20 lines)
+The remaining code is primarily JSX and thin event handlers. Major business logic has been successfully extracted into testable, reusable units.
