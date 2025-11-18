@@ -13,21 +13,17 @@ import { useStageProgression } from '../hooks/useStageProgression';
 import { useTaskAutomation } from '../hooks/useTaskAutomation';
 import { useEscapeHatches } from '../hooks/useEscapeHatches';
 import { useMainButton } from '../hooks/useMainButton';
+import { useAudio } from '../hooks/useAudio';
 import { getBlockedReason } from '../utils/blockedReasons';
 
 interface NightmareZoneProps {
   onComplete?: () => void;
   onLeave?: () => void;
   onGameEnding: (endingType: 'burn' | 'delegate' | 'assimilate', tasksUnlocked: number, nightmareStage: number) => void;
-  audio: {
-    playNightmarePing: (chaosLevel: number) => void;
-    startNightmarePings: (subtaskCount: number) => void;
-    stopNightmarePings: () => void;
-    playSlackKnock: () => void;
-  };
 }
 
-export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
+export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
+  const audio = useAudio();
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);

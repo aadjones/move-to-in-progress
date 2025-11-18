@@ -175,12 +175,6 @@ function App() {
           onComplete={handleNightmareComplete}
           onLeave={handleNightmareLeave}
           onGameEnding={handleGameEnding}
-          audio={{
-            playNightmarePing: audioManager.playNightmarePing.bind(audioManager),
-            startNightmarePings: audioManager.startNightmarePings.bind(audioManager),
-            stopNightmarePings: audioManager.stopNightmarePings.bind(audioManager),
-            playSlackKnock: audioManager.playSlackKnock.bind(audioManager),
-          }}
         />
       )}
 

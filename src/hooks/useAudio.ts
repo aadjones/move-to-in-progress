@@ -37,5 +37,6 @@ export const useAudio = () => {
     startNightmarePings: (subtaskCount: number) => audioManager.startNightmarePings(subtaskCount),
     stopNightmarePings: () => audioManager.stopNightmarePings(),
     playGroundDrone: () => audioManager.playGroundDrone(),
+    playSlackKnock: () => audioManager.playSlackKnock(),
   };
 };

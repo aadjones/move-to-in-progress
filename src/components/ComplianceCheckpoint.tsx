@@ -3,16 +3,15 @@ import { TaskManager } from '../taskGraph/TaskManager';
 import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
 import type { Task } from '../taskGraph/types';
+import { useAudio } from '../hooks/useAudio';
 
 interface ComplianceCheckpointProps {
   onComplete: () => void;
-  audio: {
-    playNightmarePing: (chaosLevel: number) => void;
-  };
   children: React.ReactNode;
 }
 
-export const ComplianceCheckpoint = ({ onComplete, audio, children }: ComplianceCheckpointProps) => {
+export const ComplianceCheckpoint = ({ onComplete, children }: ComplianceCheckpointProps) => {
+  const audio = useAudio();
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>(taskManager.getTasks());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
