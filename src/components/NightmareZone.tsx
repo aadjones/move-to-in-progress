@@ -5,6 +5,7 @@ import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
 import { toastMessages } from '../data/subtasks';
 import { CHAOS_THRESHOLDS } from '../config/gameConfig';
+import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 
 type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
 
@@ -578,35 +579,12 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
         )}
 
         {/* Fixed Emergency Escape Panel */}
-        {showEscapeHatches && (
-          <div className="fixed bottom-8 right-8 z-[70]">
-            <div className="bg-red-600 rounded-lg shadow-2xl p-4 border-4 border-red-800 animate-pulse">
-              <p className="text-white text-center font-bold mb-3 text-lg">
-                🚨 EMERGENCY ESCAPE 🚨
-              </p>
-              <div className="space-y-2">
-                <button
-                  onClick={handleBurnItDown}
-                  className="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
-                >
-                  🔥 BURN IT ALL DOWN
-                </button>
-                <button
-                  onClick={handleDelegate}
-                  className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
-                >
-                  👋 DELEGATE TO COWORKER
-                </button>
-                <button
-                  onClick={handleAssimilate}
-                  className="w-full bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm border-2 border-white"
-                >
-                  🤝 JOIN THE BUREAUCRACY
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <EscapeHatchPanel
+          visible={showEscapeHatches}
+          onBurnItDown={handleBurnItDown}
+          onDelegate={handleDelegate}
+          onAssimilate={handleAssimilate}
+        />
       </div>
     </div>
   );
