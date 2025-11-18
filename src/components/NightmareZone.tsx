@@ -4,14 +4,13 @@ import type { Task } from '../taskGraph/types';
 import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
 import { toastMessages } from '../data/subtasks';
-import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
 import { TaskItem } from './nightmare/TaskItem';
 import { useCursorDrift } from '../hooks/useCursorDrift';
-
-type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
+import { useStageProgression, getStageNumber } from '../hooks/useStageProgression';
+import { useTaskAutomation } from '../hooks/useTaskAutomation';
 
 interface NightmareZoneProps {
   onComplete?: () => void;
@@ -26,10 +25,8 @@ interface NightmareZoneProps {
 }
 
 export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
-  const [stage, setStage] = useState<GameStage>('initial');
   const [taskManager] = useState(() => new TaskManager());
   const [tasks, setTasks] = useState<Task[]>([]);
-  const cursorDrift = useCursorDrift(stage);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [showBlockedModal, setShowBlockedModal] = useState(false);
@@ -38,6 +35,10 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
 
   const totalTasks = tasks.filter((t) => t.id !== 'root_task' && t.status !== 'completed').length;
   const rootTask = taskManager.getRootTask();
+
+  // Use custom hooks for stage progression and automation
+  const stage = useStageProgression(totalTasks);
+  const cursorDrift = useCursorDrift(stage);
 
   // Sync tasks from manager
   const refreshTasks = useCallback(() => {
@@ -51,7 +52,7 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
 
   // STAGE 0 → 1: Start Task
   const handleStartTask = () => {
-    setStage('started');
+    // Stage progression is now automatic via useStageProgression hook
     refreshTasks();
     audio.playNightmarePing(0.1);
   };
@@ -167,87 +168,40 @@ export const NightmareZone = ({ onGameEnding, audio }: NightmareZoneProps) => {
     audio.playNightmarePing(Math.min(totalTasks / 50, 1));
   };
 
-  // Update stage based on task count
-  useEffect(() => {
-    if (totalTasks >= CHAOS_THRESHOLDS.STAGE_7_CHAOS) {
-      setStage('chaos');
-    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_6_AUTOMATION) {
-      setStage('automation');
-    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_5_MUTATION) {
-      setStage('mutating');
-    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_4_MULTIPLICATION) {
-      setStage('multiplying');
-    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_3_INTERACTIONS_BEGIN) {
-      setStage('resolving');
-    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_2_TASKS_APPEAR) {
-      setStage('started');
-    }
-  }, [totalTasks, stage]);
-
-  // Cursor drift is now handled by useCursorDrift hook
-
-  // STAGE 6+: Auto-complete random tasks (automation chaos)
-  useEffect(() => {
-    if (stage !== 'automation' && stage !== 'chaos') return;
-    if (totalTasks >= CHAOS_THRESHOLDS.ESCAPE_THRESHOLD) return;
-
-    const autoCompleteInterval = setInterval(() => {
-      const completableTasks = taskManager.getCompletableTasks();
-      const randomTask = completableTasks[Math.floor(Math.random() * completableTasks.length)];
-
-      if (randomTask) {
-        taskManager.completeTask(randomTask.id);
-        refreshTasks();
-        audio.playNightmarePing(Math.random() * 0.5);
-      }
-    }, stage === 'chaos' ? 3000 : 5000); // Faster in chaos mode
-
-    return () => clearInterval(autoCompleteInterval);
-  }, [stage, totalTasks, taskManager, refreshTasks, audio]);
-
-  // STAGE 6+: Background pings
-  useEffect(() => {
-    if (stage === 'automation' || stage === 'chaos') {
-      audio.startNightmarePings(totalTasks);
-      return () => audio.stopNightmarePings();
-    }
-  }, [stage, totalTasks, audio]);
-
-  // Toast spam is now handled by ToastManager component
-
-  // Task rendering is now handled by TaskItem component
-
-  // Helper to get current nightmare stage number
-  const getNightmareStageNumber = (): number => {
-    if (stage === 'chaos') return 7;
-    if (stage === 'automation') return 6;
-    if (stage === 'mutating') return 5;
-    if (stage === 'multiplying') return 4;
-    if (stage === 'resolving') return 3;
-    if (stage === 'started') return 2;
-    return 1;
-  };
+  // Stage progression is now handled by useStageProgression hook
+  // Auto-completion and background audio handled by useTaskAutomation hook
+  useTaskAutomation({
+    stage,
+    totalTasks,
+    taskManager,
+    onTaskComplete: refreshTasks,
+    audio: {
+      playNightmarePing: audio.playNightmarePing,
+      startNightmarePings: audio.startNightmarePings,
+      stopNightmarePings: audio.stopNightmarePings,
+    },
+  });
 
   // Escape hatch handlers
   const handleBurnItDown = () => {
     const count = taskManager.getTaskCount();
-    const stage = getNightmareStageNumber();
+    const stageNumber = getStageNumber(stage);
     taskManager.executeBurnItDown();
-    onGameEnding('burn', count, stage);
+    onGameEnding('burn', count, stageNumber);
   };
 
   const handleDelegate = () => {
     const count = taskManager.getTaskCount();
-    const stage = getNightmareStageNumber();
+    const stageNumber = getStageNumber(stage);
     taskManager.executeDelegate();
-    onGameEnding('delegate', count, stage);
+    onGameEnding('delegate', count, stageNumber);
   };
 
   const handleAssimilate = () => {
     const count = taskManager.getTaskCount();
-    const stage = getNightmareStageNumber();
+    const stageNumber = getStageNumber(stage);
     taskManager.executeAssimilate('Senior Bureaucracy Facilitator');
-    onGameEnding('assimilate', count, stage);
+    onGameEnding('assimilate', count, stageNumber);
   };
 
   // Check if we should show escape hatches
