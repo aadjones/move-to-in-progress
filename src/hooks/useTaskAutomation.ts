@@ -34,34 +34,36 @@ export const useTaskAutomation = ({
   onTaskComplete,
   audio,
 }: TaskAutomationOptions): void => {
-  // Auto-complete random tasks in automation/chaos/breakdown/annihilation stages
+  // Auto-complete random tasks in automation/chaos/breakdown/annihilation/singularity stages
   useEffect(() => {
-    if (stage !== 'automation' && stage !== 'chaos' && stage !== 'breakdown' && stage !== 'annihilation') return;
+    if (stage !== 'automation' && stage !== 'chaos' && stage !== 'breakdown' && stage !== 'annihilation' && stage !== 'singularity') return;
     if (totalTasks >= CHAOS_THRESHOLDS.ESCAPE_THRESHOLD) return;
 
     const autoCompleteInterval = setInterval(() => {
       const completableTasks = taskManager.getCompletableTasks();
-      const randomTask = completableTasks[Math.floor(Math.random() * completableTasks.length)];
+      // Filter out crisis-response tasks - player must manually complete these
+      const nonCrisisTasks = completableTasks.filter((task) => task.archetype !== 'crisis-response');
+      const randomTask = nonCrisisTasks[Math.floor(Math.random() * nonCrisisTasks.length)];
 
       if (randomTask) {
         taskManager.completeTask(randomTask.id);
         onTaskComplete();
         // Use breakdown ping in Stage 8+, nightmare ping in earlier stages
-        if (stage === 'breakdown' || stage === 'annihilation') {
+        if (stage === 'breakdown' || stage === 'annihilation' || stage === 'singularity') {
           audio.playBreakdownPing(Math.random() * 0.5);
         } else {
           audio.playNightmarePing(Math.random() * 0.5);
         }
       }
-    }, stage === 'annihilation' ? 1000 : stage === 'breakdown' ? 2000 : stage === 'chaos' ? 3000 : 5000); // Accelerating chaos
+    }, stage === 'singularity' ? 500 : stage === 'annihilation' ? 1000 : stage === 'breakdown' ? 2000 : stage === 'chaos' ? 3000 : 5000); // Accelerating chaos
 
     return () => clearInterval(autoCompleteInterval);
   }, [stage, totalTasks, taskManager, onTaskComplete, audio]);
 
-  // Background pings during automation/chaos/breakdown/annihilation
+  // Background pings during automation/chaos/breakdown/annihilation/singularity
   useEffect(() => {
-    if (stage === 'breakdown' || stage === 'annihilation') {
-      // Stage 8-9: Breakdown audio (dual voices, polyrhythm, accelerating in Stage 9)
+    if (stage === 'breakdown' || stage === 'annihilation' || stage === 'singularity') {
+      // Stage 8-10: Breakdown audio (dual voices, polyrhythm, accelerating in Stage 9-10)
       audio.stopNightmarePings(); // Stop normal pings
       audio.startBreakdownPings(totalTasks);
       return () => audio.stopBreakdownPings();

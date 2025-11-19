@@ -7,6 +7,7 @@ import { CheckboxesInteraction } from './components/CheckboxesInteraction';
 import { ScrollDocumentInteraction } from './components/ScrollDocumentInteraction';
 import { LoadingDelayInteraction } from './components/LoadingDelayInteraction';
 import { DropdownHierarchyInteraction } from './components/DropdownHierarchyInteraction';
+import { CrisisChoiceInteraction } from './components/CrisisChoiceInteraction';
 
 interface InteractionModalProps {
   interaction: InteractionType;
@@ -146,6 +147,16 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
 
       case 'dropdown-hierarchy':
         return <DropdownHierarchyInteraction interactionData={interactionData} onComplete={handleComplete} />;
+
+      case 'crisis-choice':
+        return (
+          <CrisisChoiceInteraction
+            title={interactionData.title}
+            description={interactionData.description}
+            options={interactionData.options}
+            onComplete={handleComplete}
+          />
+        );
 
       default:
         return <div>Unknown interaction type</div>;

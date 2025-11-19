@@ -188,6 +188,9 @@ function generateTaskTitle(archetype: TaskArchetype, depth: DepthLevel): string 
       'Submit Regulatory Attestation',
       'Verify Standards Adherence',
     ],
+    'crisis-response': [
+      'Executive Crisis Response Required',
+    ],
   };
 
   return randomItem(titleMap[archetype]) + depthSuffix;
@@ -242,6 +245,9 @@ function generateTaskDescription(archetype: TaskArchetype, _isBlocked: boolean):
       'Verify compliance with current standards.',
       'Complete mandatory compliance checks.',
       'Ensure adherence to regulatory requirements.',
+    ],
+    'crisis-response': [
+      'Critical decision needed regarding organizational continuity. Select appropriate stakeholder engagement strategy.',
     ],
   };
 
@@ -389,6 +395,27 @@ export function createRootTask(): Task {
     flavorText: 'Should be straightforward—the architecture is already documented. 3 story points.',
     blockedBy: [],
     spawnsOnComplete: [],
+    createdAt: Date.now(),
+  };
+}
+
+/**
+ * Create the crisis response task (emergency exit)
+ * This task appears in late game (Stage 7-8+) and offers three ending paths
+ */
+export function createCrisisResponseTask(): Task {
+  return {
+    id: generateTaskId(),
+    pattern: 'compliance',
+    archetype: 'crisis-response',
+    depth: 10, // High depth to mark it as late-game
+    status: 'pending',
+    isCompletable: true,
+    title: 'Executive Crisis Response Required',
+    description: 'Critical decision needed regarding organizational continuity. Select appropriate stakeholder engagement strategy.',
+    flavorText: 'Urgent action required from senior leadership.',
+    blockedBy: [],
+    spawnsOnComplete: [], // This task spawns nothing - it ends the game
     createdAt: Date.now(),
   };
 }

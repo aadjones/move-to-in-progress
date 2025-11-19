@@ -137,6 +137,19 @@ export type InteractionType =
       required: true;
       /** Enable inception mode - additional dropdowns appear after completion */
       inceptionMode?: boolean;
+    }
+  | {
+      type: 'crisis-choice';
+      /** Task title/prompt */
+      title: string;
+      /** Description of the crisis */
+      description: string;
+      /** Three options that trigger different endings */
+      options: Array<{
+        label: string;
+        description: string;
+        endingType: 'burn' | 'delegate' | 'assimilate';
+      }>;
     };
 
 /**
@@ -162,4 +175,5 @@ export type ArchetypeInteractionMap = {
   meeting: Array<'calendar-select' | 'form' | 'checkboxes'>;
   attestation: Array<'typing-prompt' | 'checkboxes' | 'scroll-document'>;
   compliance: Array<'quiz' | 'checkboxes' | 'video' | 'scroll-document'>;
+  'crisis-response': Array<'crisis-choice'>;
 };

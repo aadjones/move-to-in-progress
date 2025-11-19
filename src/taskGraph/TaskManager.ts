@@ -13,12 +13,13 @@ import {
   spawnChildTasks,
   generateBlockingTasks,
   generateSpawnRules,
+  createCrisisResponseTask,
 } from './taskGenerator';
 import { getInteractionForTask } from '../interactions/interactionRegistry';
-import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 
 export class TaskManager {
   private graph: TaskGraph;
+  private crisisTaskId: string | null = null; // Track if crisis task exists
 
   constructor() {
     const rootTask = createBoardAccessTask();
@@ -277,10 +278,68 @@ export class TaskManager {
   }
 
   /**
-   * Check if escape hatches should be available
+   * Check if escape hatches should be available (old system - now deprecated)
    */
   shouldShowEscapeHatches(): boolean {
-    return this.getTaskCount() >= CHAOS_THRESHOLDS.ESCAPE_THRESHOLD;
+    // Keep this for backwards compatibility but always return false
+    // Crisis task replaces the escape hatch panel
+    return false;
+  }
+
+  /**
+   * Try to spawn the crisis response task if conditions are met
+   * Returns true if task was spawned or already exists
+   */
+  trySpawnCrisisTask(currentStage: number): boolean {
+    // Only spawn at Stage 7+ (breakdown or later)
+    if (currentStage < 7) {
+      return false;
+    }
+
+    // If crisis task already exists and is not completed, don't spawn again
+    if (this.crisisTaskId) {
+      const existingTask = this.getTask(this.crisisTaskId);
+      if (existingTask && existingTask.status !== 'completed') {
+        return true; // Task exists
+      }
+      // Task was completed or removed, allow respawn
+      this.crisisTaskId = null;
+    }
+
+    // Spawn chance increases with stage progression
+    // Stage 7-8 (Breakdown/Annihilation): 30% chance
+    // Stage 9 (Singularity approach): 60% chance
+    // Stage 10 (Singularity): 95% chance - nearly guaranteed
+    const spawnChance = currentStage >= 10 ? 0.95 : currentStage >= 9 ? 0.6 : 0.3;
+
+    if (Math.random() > spawnChance) {
+      return false;
+    }
+
+    // Create and add the crisis task
+    const crisisTask = createCrisisResponseTask();
+    crisisTask.interactionType = getInteractionForTask('crisis-response', 10);
+
+    this.graph.tasks.set(crisisTask.id, crisisTask);
+    this.crisisTaskId = crisisTask.id;
+
+    // Link to root task
+    const rootTask = this.getRootTask();
+    if (rootTask) {
+      rootTask.blockedBy.push(crisisTask.id);
+    }
+
+    console.log('[TaskManager] Crisis response task spawned');
+    return true;
+  }
+
+  /**
+   * Check if crisis task currently exists
+   */
+  hasCrisisTask(): boolean {
+    if (!this.crisisTaskId) return false;
+    const task = this.getTask(this.crisisTaskId);
+    return task !== undefined && task.status !== 'completed';
   }
 
   /**

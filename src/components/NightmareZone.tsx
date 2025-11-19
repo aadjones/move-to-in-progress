@@ -4,7 +4,6 @@ import type { Task } from '../taskGraph/types';
 import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
 import { toastMessages, breakdownToastMessages, annihilationToastMessages } from '../data/subtasks';
-import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
 import { TaskItem } from './nightmare/TaskItem';
@@ -12,7 +11,6 @@ import { DebugPanel } from './DebugPanel';
 import { useCursorDrift } from '../hooks/useCursorDrift';
 import { useStageProgression, getStageNumber, type GameStage } from '../hooks/useStageProgression';
 import { useTaskAutomation } from '../hooks/useTaskAutomation';
-import { useEscapeHatches } from '../hooks/useEscapeHatches';
 import { useMainButton } from '../hooks/useMainButton';
 import { useAudio } from '../hooks/useAudio';
 import { getBlockedReason } from '../taskGraph/blockedReasons';
@@ -88,8 +86,20 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
   };
 
   // Handle interaction completion
-  const handleInteractionComplete = (_result: InteractionResult) => {
+  const handleInteractionComplete = (result: InteractionResult) => {
     if (!selectedTask) return;
+
+    // Check if this is the crisis response task
+    if (selectedTask.archetype === 'crisis-response' && result.data?.endingType) {
+      const endingType = result.data.endingType as 'burn' | 'delegate' | 'assimilate';
+      const stageNumber = getStageNumber(stage);
+
+      // Trigger the appropriate ending
+      onGameEnding(endingType, totalTasks, stageNumber);
+
+      // Don't complete normally - the ending will handle cleanup
+      return;
+    }
 
     // Complete the task in the task manager
     taskManager.completeTask(selectedTask.id);
@@ -136,6 +146,30 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
     return () => clearInterval(safetyInterval);
   }, [taskManager, refreshTasks]);
 
+  // Crisis task spawning: try to spawn at Stage 7+ (breakdown or later)
+  useEffect(() => {
+    const stageNumber = getStageNumber(stage);
+
+    // Only attempt spawning at Stage 7+
+    if (stageNumber < 7) return;
+
+    // Try spawning immediately when entering Stage 7+
+    const didSpawn = taskManager.trySpawnCrisisTask(stageNumber);
+    if (didSpawn) {
+      refreshTasks();
+    }
+
+    // Then periodically try to respawn if it gets blocked/removed
+    const spawnInterval = setInterval(() => {
+      const spawned = taskManager.trySpawnCrisisTask(stageNumber);
+      if (spawned) {
+        refreshTasks();
+      }
+    }, 10000); // Try every 10 seconds
+
+    return () => clearInterval(spawnInterval);
+  }, [stage, taskManager, refreshTasks]);
+
   // Compliance team prelude toast (single toast at stage 5)
   const [showPreludeToast, setShowPreludeToast] = useState(false);
   useEffect(() => {
@@ -153,15 +187,8 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
     }
   }, [stage, showPreludeToast, audio]);
 
-  // Escape hatch handlers
-  const { handleBurnItDown, handleDelegate, handleAssimilate } = useEscapeHatches({
-    taskManager,
-    stage,
-    onGameEnding,
-  });
-
-  // Check if we should show escape hatches
-  const showEscapeHatches = taskManager.shouldShowEscapeHatches();
+  // Escape hatch handlers - no longer needed, removed
+  // Crisis response task replaces the escape hatch panel
 
   // Main action button
   const mainButton = useMainButton({
@@ -396,14 +423,6 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
             setShowBlockedModal(false);
             setSelectedTask(null);
           }}
-        />
-
-        {/* Fixed Emergency Escape Panel */}
-        <EscapeHatchPanel
-          visible={showEscapeHatches}
-          onBurnItDown={handleBurnItDown}
-          onDelegate={handleDelegate}
-          onAssimilate={handleAssimilate}
         />
 
         {/* Debug Panel */}

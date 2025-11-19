@@ -164,46 +164,42 @@ describe('TaskManager', () => {
     });
   });
 
-  describe('Escape Hatches', () => {
-    it('should show escape hatches after 50 tasks', () => {
-      // Complete tasks until we have 50+ with safety limit
-      let iterations = 0;
-      const MAX_ITERATIONS = 100; // Safety limit to prevent infinite loops
+  describe('Crisis Task System', () => {
+    it('should not spawn crisis task before stage 7', () => {
+      const spawned = taskManager.trySpawnCrisisTask(5);
+      expect(spawned).toBe(false);
+      expect(taskManager.hasCrisisTask()).toBe(false);
+    });
 
-      while (taskManager.getTaskCount() < 50 && iterations < MAX_ITERATIONS) {
-        const completable = taskManager.getCompletableTasks();
-        if (completable.length > 0) {
-          taskManager.completeTask(completable[0].id);
+    it('should allow crisis task spawn at stage 7+', () => {
+      // Try multiple times since it's probability-based
+      // With 30% chance, 50 attempts gives us >99.99% confidence
+      let spawned = false;
+      for (let i = 0; i < 50; i++) {
+        if (taskManager.trySpawnCrisisTask(7)) {
+          spawned = true;
+          break;
         }
-        iterations++;
       }
-
-      // If we reached 50 tasks, verify escape hatches work
-      if (taskManager.getTaskCount() >= 50) {
-        expect(taskManager.shouldShowEscapeHatches()).toBe(true);
-      } else {
-        // If we couldn't reach 50 (game completed or task spawning was minimal),
-        // just verify the logic works correctly
-        expect(taskManager.shouldShowEscapeHatches()).toBe(false);
-      }
+      expect(spawned).toBe(true);
     });
 
-    it('should not show escape hatches before 50 tasks', () => {
-      expect(taskManager.shouldShowEscapeHatches()).toBe(false);
-    });
+    it('should not auto-complete once spawned', () => {
+      // Spawn crisis task
+      let attempts = 0;
+      while (!taskManager.hasCrisisTask() && attempts < 20) {
+        taskManager.trySpawnCrisisTask(10);
+        attempts++;
+      }
 
-    it('should execute burn it down correctly', () => {
-      // Add some tasks
-      const completable = taskManager.getCompletableTasks();
-      taskManager.completeTask(completable[0].id);
+      const initialHasCrisis = taskManager.hasCrisisTask();
 
-      taskManager.executeBurnItDown();
+      // Try to spawn again - should return true without spawning duplicate
+      const secondSpawn = taskManager.trySpawnCrisisTask(10);
 
-      // Should only have root task left
-      expect(taskManager.getTaskCount()).toBe(1);
-
-      const rootTask = taskManager.getRootTask();
-      expect(rootTask?.status).toBe('completed');
+      expect(initialHasCrisis).toBe(true);
+      expect(secondSpawn).toBe(true);
+      expect(taskManager.hasCrisisTask()).toBe(true);
     });
   });
 });

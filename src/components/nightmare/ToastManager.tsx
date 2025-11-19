@@ -40,6 +40,7 @@ export const ToastManager = ({
 }: ToastManagerProps) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [accelerationFactor, setAccelerationFactor] = useState(1);
+  const [totalSpawned, setTotalSpawned] = useState(0);
 
   // Singularity mode: exponentially accelerating spawns
   useEffect(() => {
@@ -54,30 +55,35 @@ export const ToastManager = ({
       const scheduleNext = () => {
         spawnCount++;
 
-        // Spawn multiple toasts at once as it accelerates
+        // Calculate how many toasts to spawn in this batch
         const batchSize = Math.min(Math.floor(spawnCount / 10) + 1, 20);
 
+        // Spawn them over time instead of all at once
+        // This prevents audio scheduling conflicts
         for (let i = 0; i < batchSize; i++) {
-          const message = messages[Math.floor(Math.random() * messages.length)];
-          const newToast = { id: Date.now() + i, message };
-
-          setToasts((prev) => [...prev, newToast]);
-
-          // Use singularity audio if in singularity mode
-          if (onSingularityToastAppear) {
-            onSingularityToastAppear();
-          } else {
-            onToastAppear?.();
-          }
-
-          // Auto-remove toast after duration
           setTimeout(() => {
-            setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
-          }, toastDuration);
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            const newToast = { id: Date.now() + Math.random(), message };
+
+            setToasts((prev) => [...prev, newToast]);
+            setTotalSpawned((prev) => prev + 1);
+
+            // Play audio for this toast
+            if (onSingularityToastAppear) {
+              onSingularityToastAppear();
+            } else {
+              onToastAppear?.();
+            }
+
+            // Auto-remove toast after duration
+            setTimeout(() => {
+              setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
+            }, toastDuration);
+          }, i * 20); // Spawn each toast 20ms apart
         }
 
-        // Exponential decay - gets faster and faster
-        currentInterval = Math.max(50, spawnInterval * Math.pow(0.92, spawnCount));
+        // Exponential decay - gets faster and faster (more aggressive acceleration)
+        currentInterval = Math.max(20, spawnInterval * Math.pow(0.85, spawnCount));
         setAccelerationFactor(spawnInterval / currentInterval);
 
         timeoutId = setTimeout(scheduleNext, currentInterval);
@@ -111,11 +117,19 @@ export const ToastManager = ({
     <div className={`fixed ${singularityMode ? 'inset-0' : 'top-4 right-4 left-4 sm:left-auto'} z-[60] ${singularityMode ? '' : 'sm:max-w-sm space-y-2'} pointer-events-none`}>
       {toasts.map((toast, index) => {
         // In singularity mode, spawn from center and explode outward
-        const angle = singularityMode ? (toast.id * 37) % 360 : 0;
-        const distance = singularityMode ? Math.min(index * 5, 400) : 0;
-        // Scale grows exponentially with acceleration factor - from 0.3 to 3x size
-        const scale = singularityMode ? 0.3 + (accelerationFactor * 0.4) : 1;
-        const rotation = singularityMode ? (toast.id * 13) % 60 - 30 : 0;
+        // Use multiple random seeds for more variety in spawn positions
+        const angle = singularityMode ? (toast.id * 137.508) % 360 : 0; // Golden angle for better distribution
+        // Use total spawned count for cumulative growth that never resets
+        const toastSequence = singularityMode ? totalSpawned - (toasts.length - index) : 0;
+        // Distance grows exponentially with total spawned count - truly explosive growth
+        const distance = singularityMode ? toastSequence * accelerationFactor * 15 : 0;
+        // Scale grows exponentially - each toast gets bigger as acceleration increases
+        const scale = singularityMode ? Math.pow(accelerationFactor, 2) : 1;
+        // Rotation grows with acceleration
+        const rotation = singularityMode ? (toast.id * 23) % 90 - 45 : 0;
+        // Add varied random offsets for screen position variety
+        const randomOffsetX = singularityMode ? (Math.sin(toast.id * 0.547) * accelerationFactor * 300) : 0;
+        const randomOffsetY = singularityMode ? (Math.cos(toast.id * 0.739) * accelerationFactor * 300) : 0;
 
         return (
           <div
@@ -126,10 +140,10 @@ export const ToastManager = ({
               left: singularityMode ? '50%' : 'auto',
               top: singularityMode ? '50%' : 'auto',
               animation: singularityMode
-                ? `explodeOut 0.5s ease-out forwards`
+                ? ''
                 : `slideInFade 0.3s ease-out, fadeOut 0.5s ease-in ${(toastDuration - 500) / 1000}s forwards`,
               transform: singularityMode
-                ? `translate(-50%, -50%) translate(${Math.cos(angle * Math.PI / 180) * distance}px, ${Math.sin(angle * Math.PI / 180) * distance}px) scale(${scale}) rotate(${rotation}deg)`
+                ? `translate(-50%, -50%) translate(${Math.cos(angle * Math.PI / 180) * distance + randomOffsetX}px, ${Math.sin(angle * Math.PI / 180) * distance + randomOffsetY}px) scale(${scale}) rotate(${rotation}deg)`
                 : 'none',
               zIndex: singularityMode ? 1000 + index : 'auto',
             }}
@@ -161,16 +175,12 @@ export const ToastManager = ({
           }
         }
 
-        @keyframes explodeOut {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.1);
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
           }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0.8;
+          to {
+            transform: rotate(360deg);
           }
         }
       `}</style>

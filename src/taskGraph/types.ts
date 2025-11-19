@@ -32,7 +32,8 @@ export type TaskArchetype =
   | 'system-access'      // Portal/system access tasks
   | 'meeting'            // Schedule/attend meetings
   | 'attestation'        // Sign/acknowledge policies
-  | 'compliance';        // Compliance requirements
+  | 'compliance'         // Compliance requirements
+  | 'crisis-response';   // Final emergency exit task
 
 /**
  * Spawn rules determine what happens when a task is completed

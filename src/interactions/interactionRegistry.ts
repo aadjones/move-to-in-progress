@@ -821,6 +821,34 @@ function getComplianceInteraction(depth: DepthLevel): InteractionType {
 }
 
 /**
+ * Get interaction for crisis-response archetype (final emergency exit)
+ */
+function getCrisisResponseInteraction(): InteractionType {
+  return {
+    type: 'crisis-choice',
+    title: 'Executive Crisis Response Required',
+    description: 'Critical decision needed regarding organizational continuity. Select appropriate stakeholder engagement strategy.',
+    options: [
+      {
+        label: 'Report this to someone outside',
+        description: 'Document everything and escalate to external authorities. Regulatory agencies, press, whoever will listen.',
+        endingType: 'burn',
+      },
+      {
+        label: 'Step back from leadership responsibilities',
+        description: 'Reduce scope to core deliverables. Minimum viable involvement going forward.',
+        endingType: 'delegate',
+      },
+      {
+        label: 'Accept promotion to Senior Process Architect',
+        description: 'Champion organizational transformation initiatives and drive operational excellence as a strategic change agent',
+        endingType: 'assimilate',
+      },
+    ],
+  };
+}
+
+/**
  * Main registry function - maps archetype to interaction
  */
 export function getInteractionForTask(
@@ -851,6 +879,9 @@ export function getInteractionForTask(
 
     case 'compliance':
       return getComplianceInteraction(depth);
+
+    case 'crisis-response':
+      return getCrisisResponseInteraction();
 
     default:
       // Fallback
