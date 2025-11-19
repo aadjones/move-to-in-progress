@@ -17,6 +17,9 @@ class AudioManager {
   private panner: Tone.Panner | null = null;
   private breakdownEventId: number | null = null;
 
+  // Track last scheduled time to prevent timing collisions
+  private lastScheduledTime: number = 0;
+
   async initialize() {
     if (this.initialized) return;
 
@@ -168,14 +171,23 @@ class AudioManager {
     }
 
     // Play double knock pattern using absolute timing
+    // Ensure we never schedule before the last scheduled time
     const now = Tone.now();
+    const baseTime = Math.max(now + 0.01, this.lastScheduledTime + 0.02);
+
+    let maxScheduledTime = baseTime;
     AUDIO_CONFIG.KNOCK_FREQUENCIES.forEach((freq, i) => {
+      const scheduledTime = baseTime + AUDIO_CONFIG.KNOCK_TIMING[i];
       this.synth?.triggerAttackRelease(
         freq,
         '16n', // Very short
-        now + 0.01 + AUDIO_CONFIG.KNOCK_TIMING[i] // Add small offset to ensure future timing
+        scheduledTime
       );
+      maxScheduledTime = Math.max(maxScheduledTime, scheduledTime);
     });
+
+    // Update last scheduled time to the last note in this call
+    this.lastScheduledTime = maxScheduledTime;
   }
 
   // Play "denied" sound for blocked tasks - lower, duller thud
@@ -346,6 +358,48 @@ class AudioManager {
       Tone.Transport.clear(this.breakdownEventId);
       this.breakdownEventId = null;
     }
+  }
+
+  // Play singularity knock (Stage 10) - extreme distortion and chaos
+  playSingularityKnock() {
+    if (!this.synth || !this.initialized) {
+      console.warn('Audio not initialized for singularity knock');
+      return;
+    }
+
+    // Extreme distortion and reverb
+    if (this.distortion) {
+      this.distortion.distortion = 0.95;
+    }
+    if (this.reverb) {
+      this.reverb.wet.value = 0.9;
+    }
+    if (this.pitchShift) {
+      // Random pitch shift for chaos
+      this.pitchShift.pitch = (Math.random() - 0.5) * 24; // ±2 octaves
+    }
+
+    // Ensure we never schedule before the last scheduled time
+    // Add extra padding (0.05s) to account for rapid successive calls
+    const now = Tone.now();
+    const baseTime = Math.max(now + 0.01, this.lastScheduledTime + 0.05);
+
+    // Play chaotic knock pattern with random frequencies
+    let maxScheduledTime = baseTime;
+    AUDIO_CONFIG.KNOCK_FREQUENCIES.forEach((freq, i) => {
+      // Add random frequency variance for extra chaos
+      const chaoticFreq = freq + (Math.random() - 0.5) * 200;
+      const scheduledTime = baseTime + AUDIO_CONFIG.KNOCK_TIMING[i];
+      this.synth?.triggerAttackRelease(
+        chaoticFreq,
+        '8n', // Longer duration for more overlap
+        scheduledTime
+      );
+      maxScheduledTime = Math.max(maxScheduledTime, scheduledTime);
+    });
+
+    // Update last scheduled time to the last note in this call
+    this.lastScheduledTime = maxScheduledTime;
   }
 
   // Play low drone for "reached the bottom" (Phase 3)

@@ -43,5 +43,7 @@ export const useAudio = () => {
     playBreakdownPing: (chaosLevel: number) => audioManager.playBreakdownPing(chaosLevel),
     startBreakdownPings: (subtaskCount: number) => audioManager.startBreakdownPings(subtaskCount),
     stopBreakdownPings: () => audioManager.stopBreakdownPings(),
+    // Stage 10 singularity audio
+    playSingularityKnock: () => audioManager.playSingularityKnock(),
   };
 };
