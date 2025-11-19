@@ -266,10 +266,9 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
               </label>
 
               {/* Auto-complete button for text/textarea fields */}
-              {/* Show if: smart detection works OR it's a regular text field without email */}
+              {/* Show if: smart detection works OR it's a regular text field */}
               {(field.type === 'text' || field.type === 'textarea') &&
-               !field.id.toLowerCase().includes('email') &&
-               (generateRandomCode(field) || true) && (
+               (generateRandomCode(field) || field.type === 'textarea') && (
                 <button
                   type="button"
                   onClick={() => autoFillField(field)}
