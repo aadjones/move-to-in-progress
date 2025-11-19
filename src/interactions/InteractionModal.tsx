@@ -6,6 +6,7 @@ import { TypingPromptInteraction } from './components/TypingPromptInteraction';
 import { CheckboxesInteraction } from './components/CheckboxesInteraction';
 import { ScrollDocumentInteraction } from './components/ScrollDocumentInteraction';
 import { LoadingDelayInteraction } from './components/LoadingDelayInteraction';
+import { DropdownHierarchyInteraction } from './components/DropdownHierarchyInteraction';
 
 interface InteractionModalProps {
   interaction: InteractionType;
@@ -144,28 +145,7 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
         );
 
       case 'dropdown-hierarchy':
-        // Simple implementation for dropdown hierarchy
-        return (
-          <div className="dropdown-hierarchy-interaction">
-            <h3>{interactionData.prompt}</h3>
-            <form onSubmit={(e) => { e.preventDefault(); handleComplete(); }}>
-              {interactionData.hierarchy.map((level, index) => (
-                <div key={index} className="hierarchy-level">
-                  <label>{level.label}</label>
-                  <select required>
-                    <option value="">Select...</option>
-                    {level.options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-              <button type="submit">Submit</button>
-            </form>
-          </div>
-        );
+        return <DropdownHierarchyInteraction interactionData={interactionData} onComplete={handleComplete} />;
 
       default:
         return <div>Unknown interaction type</div>;
@@ -222,14 +202,27 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1.5rem;
+          padding: 1rem;
           border-bottom: 1px solid #eee;
+        }
+
+        @media (min-width: 640px) {
+          .modal-header {
+            padding: 1.5rem;
+          }
         }
 
         .modal-header h2 {
           margin: 0;
-          font-size: 1.3rem;
+          font-size: 1.1rem;
           color: #333;
+          padding-right: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+          .modal-header h2 {
+            font-size: 1.3rem;
+          }
         }
 
         .close-btn {
@@ -260,12 +253,18 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
 
         /* Multi-step specific styles */
         .multi-step-container {
-          padding: 1.5rem;
+          padding: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .multi-step-container {
+            padding: 1.5rem;
+          }
         }
 
         .step-indicator {
           text-align: center;
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           color: #666;
           padding: 0.5rem;
           background: #f5f5f5;
@@ -273,19 +272,44 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
           margin-bottom: 1rem;
         }
 
+        @media (min-width: 640px) {
+          .step-indicator {
+            font-size: 0.85rem;
+          }
+        }
+
         .multi-step-title {
-          font-size: 1.1rem;
+          font-size: 1rem;
           margin-bottom: 1rem;
           text-align: center;
         }
 
+        @media (min-width: 640px) {
+          .multi-step-title {
+            font-size: 1.1rem;
+          }
+        }
+
         /* Calendar select styles */
         .calendar-select-interaction {
-          padding: 1.5rem;
+          padding: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .calendar-select-interaction {
+            padding: 1.5rem;
+          }
         }
 
         .calendar-select-interaction h3 {
           margin-bottom: 1rem;
+          font-size: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .calendar-select-interaction h3 {
+            font-size: 1.1rem;
+          }
         }
 
         .calendar-slots {
@@ -301,6 +325,7 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
           border-radius: 4px;
           cursor: pointer;
           transition: background 0.2s;
+          font-size: 0.9rem;
         }
 
         .calendar-slot:hover {
@@ -310,11 +335,24 @@ export const InteractionModal: React.FC<InteractionModalProps> = ({
 
         /* Dropdown hierarchy styles */
         .dropdown-hierarchy-interaction {
-          padding: 1.5rem;
+          padding: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .dropdown-hierarchy-interaction {
+            padding: 1.5rem;
+          }
         }
 
         .dropdown-hierarchy-interaction h3 {
           margin-bottom: 1.5rem;
+          font-size: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .dropdown-hierarchy-interaction h3 {
+            font-size: 1.1rem;
+          }
         }
 
         .hierarchy-level {

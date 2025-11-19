@@ -109,15 +109,27 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
 
       <style>{`
         .scroll-document-interaction {
-          padding: 1.5rem;
+          padding: 1rem;
           display: flex;
           flex-direction: column;
           height: 100%;
         }
 
+        @media (min-width: 640px) {
+          .scroll-document-interaction {
+            padding: 1.5rem;
+          }
+        }
+
         .scroll-document-interaction h3 {
           margin-bottom: 0.5rem;
-          font-size: 1.1rem;
+          font-size: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .scroll-document-interaction h3 {
+            font-size: 1.1rem;
+          }
         }
 
         .document-info {
@@ -127,17 +139,31 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
           margin-bottom: 1rem;
           padding-bottom: 0.5rem;
           border-bottom: 1px solid #ddd;
+          flex-wrap: wrap;
+          gap: 0.5rem;
         }
 
         .page-count {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           color: #666;
         }
 
+        @media (min-width: 640px) {
+          .page-count {
+            font-size: 0.85rem;
+          }
+        }
+
         .requirement {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           color: #ff6600;
           font-style: italic;
+        }
+
+        @media (min-width: 640px) {
+          .requirement {
+            font-size: 0.85rem;
+          }
         }
 
         .document-content {
@@ -145,11 +171,17 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
           overflow-y: auto;
           border: 1px solid #ddd;
           border-radius: 4px;
-          padding: 1.5rem;
+          padding: 1rem;
           background: #fafafa;
           margin-bottom: 1rem;
           max-height: 400px;
           line-height: 1.6;
+        }
+
+        @media (min-width: 640px) {
+          .document-content {
+            padding: 1.5rem;
+          }
         }
 
         .document-content::-webkit-scrollbar {
@@ -174,14 +206,21 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
           margin-bottom: 1rem;
           text-align: justify;
           color: #333;
+          font-size: 0.9rem;
+        }
+
+        @media (min-width: 640px) {
+          .document-paragraph {
+            font-size: 1rem;
+          }
         }
 
         .document-whisper {
-          margin: 1.5rem 0;
-          padding: 0.75rem;
+          margin: 1rem 0;
+          padding: 0.5rem;
           text-align: center;
           color: #666;
-          font-size: 0.75rem;
+          font-size: 0.65rem;
           font-family: 'Courier New', monospace;
           font-style: italic;
           letter-spacing: 0.5px;
@@ -190,13 +229,27 @@ export const ScrollDocumentInteraction: React.FC<ScrollDocumentInteractionProps>
           background: #f9f9f9;
         }
 
+        @media (min-width: 640px) {
+          .document-whisper {
+            margin: 1.5rem 0;
+            padding: 0.75rem;
+            font-size: 0.75rem;
+          }
+        }
+
         .scroll-indicator {
           text-align: center;
           color: #ff6600;
           font-weight: 500;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           margin-bottom: 0.5rem;
           animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @media (min-width: 640px) {
+          .scroll-indicator {
+            font-size: 0.9rem;
+          }
         }
 
         @keyframes pulse {

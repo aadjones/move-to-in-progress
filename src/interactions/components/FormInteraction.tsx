@@ -69,6 +69,20 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
       return `${firstName}.${lastName}`;
     }
 
+    // Manager email address
+    if (label.includes('manager') && label.includes('email')) {
+      const firstNames = ['robert', 'patricia', 'michael', 'linda', 'william', 'elizabeth', 'david', 'jennifer', 'richard', 'maria'];
+      const lastNames = ['anderson', 'thompson', 'martinez', 'robinson', 'clark', 'rodriguez', 'lewis', 'walker', 'hall', 'allen'];
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      return `${firstName}.${lastName}@company.com`;
+    }
+
+    // Employee Number: 5-digit numeric (must come before general employee/staff check)
+    if (label.includes('employee') && label.includes('number')) {
+      return Math.floor(10000 + Math.random() * 90000).toString();
+    }
+
     // Project code: 3-letter acronym
     if (label.includes('project') && label.includes('code')) {
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -286,16 +300,35 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
 
       <style>{`
         .form-interaction {
-          padding: 1.5rem;
+          padding: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .form-interaction {
+            padding: 1.5rem;
+          }
         }
 
         .form-interaction h3 {
-          margin-bottom: 1.5rem;
-          font-size: 1.1rem;
+          margin-bottom: 1rem;
+          font-size: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .form-interaction h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+          }
         }
 
         .form-field {
-          margin-bottom: 1.25rem;
+          margin-bottom: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .form-field {
+            margin-bottom: 1.25rem;
+          }
         }
 
         .form-field.checkbox-field {
@@ -314,24 +347,39 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
           justify-content: space-between;
           align-items: center;
           margin-bottom: 0.4rem;
+          gap: 0.5rem;
         }
 
         .form-field label {
           display: block;
           font-weight: 500;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           margin: 0;
         }
 
+        @media (min-width: 640px) {
+          .form-field label {
+            font-size: 0.9rem;
+          }
+        }
+
         .auto-fill-btn {
-          padding: 0.25rem 0.75rem;
+          padding: 0.25rem 0.5rem;
           background: #f0f0f0;
           color: #666;
           border: 1px solid #ddd;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        @media (min-width: 640px) {
+          .auto-fill-btn {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+          }
         }
 
         .auto-fill-btn:hover {
@@ -349,11 +397,20 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
         .form-field textarea,
         .form-field select {
           width: 100%;
-          padding: 0.6rem;
+          padding: 0.5rem;
           border: 1px solid #ddd;
           border-radius: 4px;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           font-family: inherit;
+        }
+
+        @media (min-width: 640px) {
+          .form-field input,
+          .form-field textarea,
+          .form-field select {
+            padding: 0.6rem;
+            font-size: 0.9rem;
+          }
         }
 
         .form-field.checkbox-field input {
@@ -369,15 +426,27 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
 
         .helper-text {
           margin-top: 0.3rem;
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           color: #666;
           font-style: italic;
         }
 
+        @media (min-width: 640px) {
+          .helper-text {
+            font-size: 0.8rem;
+          }
+        }
+
         .error-text {
           margin-top: 0.3rem;
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           color: #ff4444;
+        }
+
+        @media (min-width: 640px) {
+          .error-text {
+            font-size: 0.8rem;
+          }
         }
 
         .submit-btn {
@@ -388,8 +457,14 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
           border: none;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 1rem;
+          font-size: 0.95rem;
           width: 100%;
+        }
+
+        @media (min-width: 640px) {
+          .submit-btn {
+            font-size: 1rem;
+          }
         }
 
         .submit-btn:hover {
