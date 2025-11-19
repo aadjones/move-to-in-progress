@@ -56,12 +56,15 @@ describe('useStageProgression', () => {
 
 describe('getStageNumber', () => {
   it('returns correct numbers for each stage', () => {
-    expect(getStageNumber('initial')).toBe(1);
-    expect(getStageNumber('started')).toBe(2);
-    expect(getStageNumber('resolving')).toBe(3);
-    expect(getStageNumber('multiplying')).toBe(4);
-    expect(getStageNumber('mutating')).toBe(5);
-    expect(getStageNumber('automation')).toBe(6);
-    expect(getStageNumber('chaos')).toBe(7);
+    expect(getStageNumber('initial')).toBe(0);
+    expect(getStageNumber('started')).toBe(1);
+    expect(getStageNumber('resolving')).toBe(2);
+    expect(getStageNumber('multiplying')).toBe(3);
+    expect(getStageNumber('mutating')).toBe(4);
+    expect(getStageNumber('automation')).toBe(5);
+    expect(getStageNumber('chaos')).toBe(6);
+    expect(getStageNumber('breakdown')).toBe(7);
+    expect(getStageNumber('annihilation')).toBe(8);
+    expect(getStageNumber('singularity')).toBe(9);
   });
 });

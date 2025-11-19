@@ -5,7 +5,26 @@
 
 /**
  * Chaos thresholds for nightmare zone progression
- * These determine when each stage of the nightmare activates based on task count
+ *
+ * STAGE PROGRESSION SYSTEM:
+ * The game uses a hybrid progression system with both task-based and timer-based stages.
+ *
+ * TASK-BASED STAGES (triggered by number of unlocked tasks):
+ *   Stage 0 (Vestibule - Innocence): 0 tasks - Initial state
+ *   Stage 1 (First Circle - Limbo): 1+ tasks - Tasks start appearing
+ *   Stage 2 (Second Circle - The Blockers): 3+ tasks - Interactions begin
+ *   Stage 3 (Third Circle - Multiplication): 8+ tasks - Tasks multiply faster
+ *   Stage 4 (Fourth Circle - Mutation): 12+ tasks - Cursor drift, visual chaos
+ *   Stage 5 (Fifth Circle - The Automated): 18+ tasks - Auto-expansion, overwhelming
+ *   Stage 6 (Sixth Circle - Full Chaos): 24+ tasks - Full chaos, toast spam begins
+ *   Stage 9 (Ninth Circle - Singularity): 100+ tasks - Notification explosion with exponential acceleration
+ *
+ * TIMER-BASED STAGES (triggered by time spent in chaos):
+ *   Stage 7 (Seventh Circle - Breakdown): 10 seconds after entering Stage 6 - UI breakdown begins
+ *   Stage 8 (Eighth Circle - Annihilation): 60 seconds after entering Stage 7 - Total annihilation
+ *
+ * Note: Singularity (Stage 9) can be reached from any stage once 100+ tasks are unlocked,
+ * including from breakdown or annihilation stages.
  */
 export const CHAOS_THRESHOLDS = {
   STAGE_2_TASKS_APPEAR: 1,        // Tasks start appearing
@@ -16,6 +35,7 @@ export const CHAOS_THRESHOLDS = {
   STAGE_7_CHAOS: 24,              // Full chaos, toast spam
   STAGE_8_TIME_THRESHOLD: 10000,  // Stage 8: 10 seconds in Stage 7
   STAGE_9_TIME_THRESHOLD: 60000,  // Stage 9: 60 seconds in Stage 8 - total annihilation
+  STAGE_10_SINGULARITY: 100,      // Stage 10: 100+ tasks - notification singularity
   ESCAPE_THRESHOLD: 50,           // Escape hatches available
   CURSOR_DRIFT_SUBTLE: 15,        // More noticeable
   CURSOR_DRIFT_OBVIOUS: 30,       // Much harder to click
