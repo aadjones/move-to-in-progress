@@ -91,3 +91,26 @@ body {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
+
+/* Shake animation for singularity mode */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2px, 1px); }
+  20% { transform: translate(2px, -1px); }
+  30% { transform: translate(-1px, 2px); }
+  40% { transform: translate(1px, -2px); }
+  50% { transform: translate(-2px, -1px); }
+  60% { transform: translate(2px, 1px); }
+  70% { transform: translate(-1px, -2px); }
+  80% { transform: translate(1px, 2px); }
+  90% { transform: translate(-2px, -1px); }
+}
+
+/* Color shift animation for singularity mode */
+@keyframes colorShift {
+  0% { filter: hue-rotate(0deg) saturate(1); }
+  25% { filter: hue-rotate(90deg) saturate(1.5); }
+  50% { filter: hue-rotate(180deg) saturate(2); }
+  75% { filter: hue-rotate(270deg) saturate(1.5); }
+  100% { filter: hue-rotate(360deg) saturate(1); }
+}

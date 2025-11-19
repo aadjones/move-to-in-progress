@@ -8,8 +8,9 @@ import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
 import { TaskItem } from './nightmare/TaskItem';
+import { DebugPanel } from './DebugPanel';
 import { useCursorDrift } from '../hooks/useCursorDrift';
-import { useStageProgression } from '../hooks/useStageProgression';
+import { useStageProgression, getStageNumber, type GameStage } from '../hooks/useStageProgression';
 import { useTaskAutomation } from '../hooks/useTaskAutomation';
 import { useEscapeHatches } from '../hooks/useEscapeHatches';
 import { useMainButton } from '../hooks/useMainButton';
@@ -32,11 +33,18 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
   const [blockedReason, setBlockedReason] = useState<string>('');
   const [discoveredBlockedTasks, setDiscoveredBlockedTasks] = useState<Set<string>>(new Set());
 
-  const totalTasks = tasks.filter((t) => t.id !== 'root_task' && t.status !== 'completed').length;
+  // Debug overrides
+  const [debugTaskOverride, setDebugTaskOverride] = useState<number | null>(null);
+  const [debugStageOverride, setDebugStageOverride] = useState<GameStage | null>(null);
+
+  const totalTasks = debugTaskOverride !== null
+    ? debugTaskOverride
+    : tasks.filter((t) => t.id !== 'root_task' && t.status !== 'completed').length;
   const rootTask = taskManager.getRootTask();
 
   // Use custom hooks for stage progression and automation
-  const stage = useStageProgression(totalTasks);
+  const actualStage = useStageProgression(totalTasks);
+  const stage = debugStageOverride !== null ? debugStageOverride : actualStage;
   const cursorDrift = useCursorDrift(stage);
 
   // Sync tasks from manager
@@ -166,8 +174,14 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
   return (
     <div
       className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center overflow-y-auto ${
-        stage === 'annihilation' ? 'flicker animate-pulse opacity-90' : stage === 'breakdown' ? 'flicker animate-pulse' : stage === 'chaos' ? 'flicker' : ''
+        stage === 'singularity' ? 'animate-pulse opacity-70' :
+        stage === 'annihilation' ? 'flicker animate-pulse opacity-90' :
+        stage === 'breakdown' ? 'flicker animate-pulse' :
+        stage === 'chaos' ? 'flicker' : ''
       }`}
+      style={{
+        animation: stage === 'singularity' ? 'shake 0.2s infinite, colorShift 1s infinite' : undefined,
+      }}
     >
       <div className="max-w-3xl w-full p-4 sm:p-8">
         {/* Q4 Compliance Lock Notice Card */}
@@ -307,14 +321,14 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
 
         {/* Compliance Team Prelude Toast (Stage 5) */}
         {showPreludeToast && (
-          <div className="fixed top-4 right-4 z-[60] max-w-sm">
+          <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[60] sm:max-w-sm">
             <div
-              className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-yellow-500"
+              className="bg-white rounded-lg shadow-lg p-3 sm:p-4 border-l-4 border-yellow-500"
               style={{
                 animation: 'slideInFade 0.3s ease-out, fadeOut 0.5s ease-in 4.5s forwards',
               }}
             >
-              <p className="text-sm text-gray-800">
+              <p className="text-xs sm:text-sm text-gray-800">
                 💼 <strong>Compliance Team:</strong> We noticed you're working on something. Quick check-in needed!
               </p>
             </div>
@@ -344,16 +358,19 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
           </div>
         )}
 
-        {/* Toast Notifications (Chaos, Breakdown & Annihilation stages) */}
+        {/* Toast Notifications (Chaos, Breakdown, Annihilation, & Singularity stages) */}
         <ToastManager
-          active={stage === 'chaos' || stage === 'breakdown' || stage === 'annihilation'}
+          active={stage === 'chaos' || stage === 'breakdown' || stage === 'annihilation' || stage === 'singularity'}
           messages={
+            stage === 'singularity' ? annihilationToastMessages :
             stage === 'annihilation' ? annihilationToastMessages :
             stage === 'breakdown' ? breakdownToastMessages :
             toastMessages
           }
-          spawnInterval={stage === 'annihilation' ? 800 : stage === 'breakdown' ? 1500 : 2500}
+          spawnInterval={stage === 'singularity' ? 2000 : stage === 'annihilation' ? 800 : stage === 'breakdown' ? 1500 : 2500}
           onToastAppear={audio.playSlackKnock}
+          singularityMode={stage === 'singularity'}
+          onSingularityToastAppear={audio.playSingularityKnock}
         />
 
         {/* Interaction Modal */}
@@ -387,6 +404,17 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
           onBurnItDown={handleBurnItDown}
           onDelegate={handleDelegate}
           onAssimilate={handleAssimilate}
+        />
+
+        {/* Debug Panel */}
+        <DebugPanel
+          onSetTasks={setDebugTaskOverride}
+          onSetStage={setDebugStageOverride}
+          onTriggerEnding={(endingType) => {
+            onGameEnding(endingType, totalTasks, getStageNumber(stage));
+          }}
+          currentTasks={totalTasks}
+          currentStage={stage}
         />
       </div>
     </div>
