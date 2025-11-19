@@ -80,6 +80,9 @@ function App() {
   const handleTaskMovedToInProgress = (position: { x: number; y: number }, width: number) => {
     // Extend page height
     document.body.style.minHeight = `${ANIMATION_CONFIG.falling.pageHeight}px`;
+    // Ensure touch scrolling works on mobile
+    document.body.style.touchAction = 'auto';
+    document.body.style.overflowY = 'auto';
     stateMachine.dispatch({
       type: 'TASK_MOVED_TO_IN_PROGRESS',
       payload: { position, width },
@@ -149,6 +152,9 @@ function App() {
       {/* Phase 2: Falling */}
       {gameState.phase === 'falling' && (
         <>
+          {/* Spacer to create scrollable height */}
+          <div style={{ height: `${ANIMATION_CONFIG.falling.pageHeight}px`, width: '1px' }} />
+
           {/* Falling card */}
           <FallingCard
             task={fallingTask}
@@ -170,8 +176,8 @@ function App() {
 
       {/* Phase 3: Ground */}
       {gameState.phase === 'ground' && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
-          <p className="text-red-500 text-2xl font-bold animate-pulse">
+        <div className="fixed inset-0 flex items-center justify-center bg-black z-50 px-4">
+          <p className="text-red-500 text-xl sm:text-2xl font-bold animate-pulse text-center">
             ▼ YOU HAVE REACHED THE BOTTOM ▼
           </p>
         </div>

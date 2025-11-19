@@ -91,7 +91,9 @@ export const TaskBoard = ({ onTaskMovedToInProgress }: TaskBoardProps) => {
       onTouchMove={handleTouchMove}
       onMouseUp={handleMouseUp}
       onTouchEnd={handleTouchEnd}
-      style={{ userSelect: dragState.isDragging ? 'none' : 'auto' }}
+      style={{
+        userSelect: dragState.isDragging ? 'none' : 'auto'
+      }}
     >
       <div className="max-w-6xl mx-auto">
         {/* Header */}

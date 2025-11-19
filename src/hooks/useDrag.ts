@@ -40,6 +40,7 @@ export const useDrag = (onDrop: (itemId: string, column: string, dropPosition: {
   }, [startDrag]);
 
   const handleTouchStart = useCallback((e: TouchEvent, itemId: string) => {
+    // Note: preventDefault() removed - using CSS touch-action instead
     const touch = e.touches[0];
     startDrag(touch.clientX, touch.clientY, itemId, e.currentTarget as HTMLElement);
   }, [startDrag]);
@@ -62,6 +63,7 @@ export const useDrag = (onDrop: (itemId: string, column: string, dropPosition: {
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
+      // Note: preventDefault() removed - using CSS touch-action instead
       const touch = e.touches[0];
       updatePosition(touch.clientX, touch.clientY);
     },

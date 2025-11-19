@@ -23,7 +23,10 @@ export const TaskCard = ({ task, onMouseDown, onTouchStart, isDragging, style, i
       }`}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
-      style={style}
+      style={{
+        ...style,
+        touchAction: isDraggable ? 'none' : 'auto',
+      }}
     >
       <div className="flex items-start justify-between mb-2">
         <h3 className="text-sm font-medium text-gray-900">{task.title}</h3>
