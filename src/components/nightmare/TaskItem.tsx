@@ -6,8 +6,7 @@
 
 import type { Task } from '../../taskGraph/types';
 import { getDriftTransform } from '../../hooks/useCursorDrift';
-
-type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
+import type { GameStage } from '../../hooks/useStageProgression';
 
 interface TaskItemProps {
   task: Task;

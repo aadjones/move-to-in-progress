@@ -56,10 +56,63 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
     setTouched((prev) => ({ ...prev, [fieldId]: true }));
   };
 
+  const generateRandomCode = (field: FormField): string => {
+    // Generate realistic codes based on pattern detection
+    const label = (field.label || field.id || '').toLowerCase();
+
+    // Username: firstname.lastname format
+    if (label.includes('username') || label.includes('user name')) {
+      const firstNames = ['john', 'sarah', 'michael', 'emma', 'david', 'lisa', 'james', 'jennifer', 'robert', 'amy'];
+      const lastNames = ['smith', 'johnson', 'williams', 'brown', 'jones', 'davis', 'miller', 'wilson', 'moore', 'taylor'];
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      return `${firstName}.${lastName}`;
+    }
+
+    // Project code: 3-letter acronym
+    if (label.includes('project') && label.includes('code')) {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      return Array.from({ length: 3 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+    }
+
+    // Staff/Employee ID: alphanumeric
+    if (label.includes('staff') || label.includes('employee') || label.includes('emp')) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({ length: 7 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    // Department code: 2-3 letter acronym
+    if (label.includes('department') && label.includes('code')) {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      return Array.from({ length: 3 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+    }
+
+    // Cost center: numeric
+    if (label.includes('cost') && label.includes('center')) {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    // ID number: numeric
+    if (label.includes('id') && label.includes('number')) {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    }
+
+    // Reference number: mix
+    if (label.includes('reference') || label.includes('ref')) {
+      return `REF-${Math.floor(10000 + Math.random() * 90000)}`;
+    }
+
+    return '';
+  };
+
   const autoFillField = (field: FormField) => {
     let value = '';
 
-    if (field.type === 'textarea' || (field.minLength && field.minLength > 30)) {
+    // Try smart field detection first
+    const smartValue = generateRandomCode(field);
+    if (smartValue) {
+      value = smartValue;
+    } else if (field.type === 'textarea' || (field.minLength && field.minLength > 30)) {
       // Long text - use corporate BS
       value = corporateBSLong[Math.floor(Math.random() * corporateBSLong.length)];
     } else if (field.type === 'text') {
@@ -198,11 +251,11 @@ export const FormInteraction: React.FC<FormInteractionProps> = ({
                 {field.required && <span className="required">*</span>}
               </label>
 
-              {/* Auto-complete button for text/textarea fields (but not IDs or numbers) */}
+              {/* Auto-complete button for text/textarea fields */}
+              {/* Show if: smart detection works OR it's a regular text field without email */}
               {(field.type === 'text' || field.type === 'textarea') &&
-               !field.id.toLowerCase().includes('id') &&
-               !field.id.toLowerCase().includes('number') &&
-               !field.id.toLowerCase().includes('email') && (
+               !field.id.toLowerCase().includes('email') &&
+               (generateRandomCode(field) || true) && (
                 <button
                   type="button"
                   onClick={() => autoFillField(field)}

@@ -3,7 +3,7 @@ import { TaskManager } from '../taskGraph/TaskManager';
 import type { Task } from '../taskGraph/types';
 import { InteractionModal } from '../interactions/InteractionModal';
 import type { InteractionResult } from '../interactions/types';
-import { toastMessages } from '../data/subtasks';
+import { toastMessages, breakdownToastMessages, annihilationToastMessages } from '../data/subtasks';
 import { EscapeHatchPanel } from './nightmare/EscapeHatchPanel';
 import { ToastManager } from './nightmare/ToastManager';
 import { BlockedTaskModal } from './nightmare/BlockedTaskModal';
@@ -14,7 +14,7 @@ import { useTaskAutomation } from '../hooks/useTaskAutomation';
 import { useEscapeHatches } from '../hooks/useEscapeHatches';
 import { useMainButton } from '../hooks/useMainButton';
 import { useAudio } from '../hooks/useAudio';
-import { getBlockedReason } from '../utils/blockedReasons';
+import { getBlockedReason } from '../taskGraph/blockedReasons';
 
 interface NightmareZoneProps {
   onComplete?: () => void;
@@ -41,6 +41,8 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
 
   // Sync tasks from manager
   const refreshTasks = useCallback(() => {
+    // Check for deadlocks before rendering
+    taskManager.checkForDeadlock();
     setTasks(taskManager.getTasks());
   }, [taskManager]);
 
@@ -64,7 +66,7 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
 
     // If task is blocked, show the absurd reason
     if (task.status === 'blocked' || !task.isCompletable) {
-      audio.playNightmarePing(0.2);
+      audio.playBlockedSound();
       setSelectedTask(task);
       setBlockedReason(getBlockedReason(task));
       setShowBlockedModal(true);
@@ -106,8 +108,42 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
       playNightmarePing: audio.playNightmarePing,
       startNightmarePings: audio.startNightmarePings,
       stopNightmarePings: audio.stopNightmarePings,
+      playBreakdownPing: audio.playBreakdownPing,
+      startBreakdownPings: audio.startBreakdownPings,
+      stopBreakdownPings: audio.stopBreakdownPings,
     },
   });
+
+  // Safety net: periodically check for deadlocks and ensure at least one task is completable
+  useEffect(() => {
+    const safetyInterval = setInterval(() => {
+      const completableTasks = taskManager.getCompletableTasks();
+      if (completableTasks.length === 0) {
+        console.warn('[Safety] No completable tasks found - triggering deadlock prevention');
+        taskManager.checkForDeadlock();
+        refreshTasks();
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(safetyInterval);
+  }, [taskManager, refreshTasks]);
+
+  // Compliance team prelude toast (single toast at stage 5)
+  const [showPreludeToast, setShowPreludeToast] = useState(false);
+  useEffect(() => {
+    if (stage === 'mutating' && !showPreludeToast) {
+      // Show a single prelude toast when entering stage 5 (mutation)
+      setShowPreludeToast(true);
+      audio.playSlackKnock();
+
+      // Auto-hide after 5 seconds
+      const timer = setTimeout(() => {
+        setShowPreludeToast(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [stage, showPreludeToast, audio]);
 
   // Escape hatch handlers
   const { handleBurnItDown, handleDelegate, handleAssimilate } = useEscapeHatches({
@@ -130,7 +166,7 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
   return (
     <div
       className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center overflow-y-auto ${
-        stage === 'chaos' ? 'flicker' : ''
+        stage === 'annihilation' ? 'flicker animate-pulse opacity-90' : stage === 'breakdown' ? 'flicker animate-pulse' : stage === 'chaos' ? 'flicker' : ''
       }`}
     >
       <div className="max-w-3xl w-full p-4 sm:p-8">
@@ -269,10 +305,54 @@ export const NightmareZone = ({ onGameEnding }: NightmareZoneProps) => {
           </div>
         )}
 
-        {/* Toast Notifications */}
+        {/* Compliance Team Prelude Toast (Stage 5) */}
+        {showPreludeToast && (
+          <div className="fixed top-4 right-4 z-[60] max-w-sm">
+            <div
+              className="bg-white rounded-lg shadow-lg p-4 border-l-4 border-yellow-500"
+              style={{
+                animation: 'slideInFade 0.3s ease-out, fadeOut 0.5s ease-in 4.5s forwards',
+              }}
+            >
+              <p className="text-sm text-gray-800">
+                💼 <strong>Compliance Team:</strong> We noticed you're working on something. Quick check-in needed!
+              </p>
+            </div>
+
+            <style>{`
+              @keyframes slideInFade {
+                from {
+                  transform: translateX(100%);
+                  opacity: 0;
+                }
+                to {
+                  transform: translateX(0);
+                  opacity: 1;
+                }
+              }
+
+              @keyframes fadeOut {
+                from {
+                  opacity: 1;
+                }
+                to {
+                  opacity: 0;
+                  transform: translateX(20px);
+                }
+              }
+            `}</style>
+          </div>
+        )}
+
+        {/* Toast Notifications (Chaos, Breakdown & Annihilation stages) */}
         <ToastManager
-          active={stage === 'chaos'}
-          messages={toastMessages}
+          active={stage === 'chaos' || stage === 'breakdown' || stage === 'annihilation'}
+          messages={
+            stage === 'annihilation' ? annihilationToastMessages :
+            stage === 'breakdown' ? breakdownToastMessages :
+            toastMessages
+          }
+          spawnInterval={stage === 'annihilation' ? 800 : stage === 'breakdown' ? 1500 : 2500}
           onToastAppear={audio.playSlackKnock}
         />
 

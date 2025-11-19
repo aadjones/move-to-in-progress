@@ -7,8 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { CHAOS_THRESHOLDS } from '../config/gameConfig';
-
-type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
+import type { GameStage } from './useStageProgression';
 
 /**
  * Hook to calculate cursor drift based on game stage

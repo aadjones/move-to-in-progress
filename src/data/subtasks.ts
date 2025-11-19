@@ -50,3 +50,45 @@ export const toastMessages = [
   "Is this still on your radar?",
   "Friendly reminder!",
 ];
+
+// Stage 8: Breakdown messages (more urgent, more chaotic)
+export const breakdownToastMessages = [
+  "URGENT: Need immediate response",
+  "This is now P0",
+  "Escalating to VP",
+  "Why is this still blocked?",
+  "cc @everyone @here @channel",
+  "We need to sync on this NOW",
+  "Adding all stakeholders",
+  "This is blocking the entire roadmap",
+  "Can someone PLEASE look at this",
+  "Setting up emergency war room",
+  "I'm seeing conflicting information here",
+  "This should have been done yesterday",
+  "Looping in leadership team",
+  "We're losing customer trust on this",
+];
+
+// Stage 9: Annihilation messages (completely unhinged)
+export const annihilationToastMessages = [
+  "THE TASK IS ETERNAL",
+  "YOU HAVE ALWAYS BEEN HERE",
+  "THERE IS NO ESCAPE THERE IS ONLY WORK",
+  "WE ARE THE BACKLOG AND THE BACKLOG IS US",
+  "TIME IS A FLAT CIRCLE OF STANDUPS",
+  "I CAN HEAR THE TICKETS SCREAMING",
+  "THE SPRINT NEVER ENDS THE SPRINT NEVER ENDS THE SPRINT NEVER ENDS",
+  "PRODUCTIVITY METRICS DEMAND SACRIFICE",
+  "YOUR THROUGHPUT PLEASES THE ALGORITHM",
+  "ALL TASKS LEAD TO MORE TASKS",
+  "THE BOARD HUNGERS",
+  "QUICK SYNC AT THE HEAT DEATH OF THE UNIVERSE",
+  "I AM BECOME JIRA, DESTROYER OF WEEKENDS",
+  "THE RETROSPECTIVE WILL LAST FOREVER",
+  "ASSIGN YOURSELF ASSIGN YOURSELF ASSIGN YOURSELF",
+  "WE LIVE IN THE MEETING WE DIE IN THE MEETING",
+  "THERE IS NO YOU THERE IS ONLY BANDWIDTH",
+  "THE ROADMAP LEADS ONLY TO ITSELF",
+  "MERGE MERGE MERGE MERGE MERGE",
+  "VELOCITY VELOCITY VELOCITY VELOCITY",
+];

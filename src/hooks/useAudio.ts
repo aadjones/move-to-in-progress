@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { audioManager } from '../utils/audio';
+import { audioManager } from '../audio/AudioManager';
 
 export const useAudio = () => {
   const initializedRef = useRef(false);
@@ -38,5 +38,10 @@ export const useAudio = () => {
     stopNightmarePings: () => audioManager.stopNightmarePings(),
     playGroundDrone: () => audioManager.playGroundDrone(),
     playSlackKnock: () => audioManager.playSlackKnock(),
+    playBlockedSound: () => audioManager.playBlockedSound(),
+    // Stage 8 breakdown audio
+    playBreakdownPing: (chaosLevel: number) => audioManager.playBreakdownPing(chaosLevel),
+    startBreakdownPings: (subtaskCount: number) => audioManager.startBreakdownPings(subtaskCount),
+    stopBreakdownPings: () => audioManager.stopBreakdownPings(),
   };
 };

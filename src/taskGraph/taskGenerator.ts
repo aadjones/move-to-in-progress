@@ -118,9 +118,9 @@ export function generateSpawnRules(
 function getArchetypesForPattern(pattern: Pattern): TaskArchetype[] {
   const archetypeMap: Record<Pattern, TaskArchetype[]> = {
     approval: ['approval-request', 'form-submission', 'meeting', 'attestation'],
-    circular: ['system-access', 'form-submission', 'approval-request'],
-    documentation: ['documentation', 'form-submission', 'system-access'],
-    compliance: ['training', 'compliance', 'attestation'],
+    circular: ['system-access', 'form-submission', 'approval-request', 'meeting'],
+    documentation: ['documentation', 'form-submission', 'system-access', 'meeting'],
+    compliance: ['training', 'compliance', 'attestation', 'meeting'],
   };
 
   return archetypeMap[pattern];
@@ -173,6 +173,10 @@ function generateTaskTitle(archetype: TaskArchetype, depth: DepthLevel): string 
       'Schedule Approval Meeting',
       'Book Sync With Manager',
       'Arrange Status Review Session',
+      'Coordinate Alignment Discussion',
+      'Set Up Dependencies Check-In',
+      'Book Documentation Review Meeting',
+      'Schedule Compliance Discussion',
     ],
     attestation: [
       'Acknowledge Policy Update',
@@ -225,6 +229,9 @@ function generateTaskDescription(archetype: TaskArchetype, _isBlocked: boolean):
       'Schedule a meeting to discuss next steps.',
       'Coordinate with relevant stakeholders.',
       'Book time with the approval committee.',
+      'Arrange a sync to unblock dependencies.',
+      'Set up time to review documentation.',
+      'Schedule a compliance alignment session.',
     ],
     attestation: [
       'Acknowledge that you understand and agree.',

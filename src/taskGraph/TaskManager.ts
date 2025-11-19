@@ -15,6 +15,7 @@ import {
   generateSpawnRules,
 } from './taskGenerator';
 import { getInteractionForTask } from '../interactions/interactionRegistry';
+import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 
 export class TaskManager {
   private graph: TaskGraph;
@@ -59,6 +60,9 @@ export class TaskManager {
 
     this.graph.tasks.set(blocker.id, blocker);
     rootTask.blockedBy.push(blocker.id);
+
+    // Ensure we have at least one completable task (safety net)
+    this.ensureAtLeastOneCompletable();
   }
 
   /**
@@ -103,6 +107,61 @@ export class TaskManager {
     return this.getTasks().filter(
       (task) => task.isCompletable && task.status !== 'completed'
     );
+  }
+
+  /**
+   * Public method to check and prevent deadlocks
+   * Can be called by components to ensure game remains playable
+   */
+  checkForDeadlock(): void {
+    this.ensureAtLeastOneCompletable();
+  }
+
+  /**
+   * Ensure at least one task is completable to prevent deadlocks
+   * This is a safety net to prevent soft-locking the game when RNG blocks all tasks
+   */
+  private ensureAtLeastOneCompletable(): void {
+    const completable = this.getCompletableTasks();
+
+    if (completable.length === 0) {
+      // Deadlock detected! Find a non-completable task and force it to be completable
+      const nonCompletableTasks = this.getTasks().filter(
+        (task) => !task.isCompletable && task.status !== 'completed'
+      );
+
+      if (nonCompletableTasks.length > 0) {
+        // Unblock the first non-completable task (could also pick randomly)
+        const taskToUnblock = nonCompletableTasks[0];
+        console.warn(
+          `[TaskManager] Deadlock prevented: forcing task "${taskToUnblock.title}" to be completable`
+        );
+
+        // Mark all blockers as completed to clean up the graph
+        taskToUnblock.blockedBy.forEach((blockerId) => {
+          const blocker = this.graph.tasks.get(blockerId);
+          if (blocker && blocker.status !== 'completed') {
+            console.warn(
+              `[TaskManager] Auto-completing blocker "${blocker.title}" to resolve deadlock`
+            );
+            blocker.status = 'completed';
+            blocker.completedAt = Date.now();
+          }
+        });
+
+        taskToUnblock.status = 'pending';
+        taskToUnblock.isCompletable = true;
+        taskToUnblock.blockedBy = [];
+
+        // Assign interaction if it doesn't have one
+        if (!taskToUnblock.interactionType) {
+          taskToUnblock.interactionType = getInteractionForTask(
+            taskToUnblock.archetype,
+            taskToUnblock.depth
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -200,6 +259,9 @@ export class TaskManager {
     if (rootTask && rootTask.blockedBy.includes(taskId)) {
       this.updateTaskAfterBlockersResolved(rootTask.id);
     }
+
+    // Ensure we have at least one completable task (safety net)
+    this.ensureAtLeastOneCompletable();
   }
 
   /**
@@ -218,7 +280,7 @@ export class TaskManager {
    * Check if escape hatches should be available
    */
   shouldShowEscapeHatches(): boolean {
-    return this.getTaskCount() >= 50;
+    return this.getTaskCount() >= CHAOS_THRESHOLDS.ESCAPE_THRESHOLD;
   }
 
   /**

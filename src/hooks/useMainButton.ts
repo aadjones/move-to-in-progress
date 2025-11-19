@@ -5,8 +5,7 @@
  */
 
 import type { Task } from '../taskGraph/types';
-
-type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
+import type { GameStage } from './useStageProgression';
 
 interface MainButtonProps {
   text: string;
@@ -42,14 +41,14 @@ export const useMainButton = ({
 
   // After started, show disabled button
   return {
-    text: rootTask?.status === 'completed' ? 'Task Complete!' : 'Attempt Task',
+    text: rootTask?.status === 'completed' ? 'Access Granted' : 'Complete Required Training',
     onClick: () => {},
     color: rootTask?.status === 'completed'
       ? 'bg-green-600'
       : 'bg-gray-500 cursor-not-allowed',
     disabled: rootTask?.status !== 'completed',
     subtitle: rootTask?.status !== 'completed'
-      ? `${totalTasks} action${totalTasks !== 1 ? 's' : ''} required first`
+      ? `${totalTasks} training module${totalTasks !== 1 ? 's' : ''} remaining`
       : undefined,
   };
 };

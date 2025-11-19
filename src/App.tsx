@@ -6,13 +6,16 @@ import { NightmareZone } from './components/NightmareZone';
 import { EndingModal } from './components/EndingModal';
 import { GameEndingScreen } from './components/GameEndingScreen';
 import { ManagerMessage } from './components/ManagerMessage';
+import { TitleScreen } from './components/TitleScreen';
 import { type BoardTask } from './types';
 import { useGlitch } from './hooks/useGlitch';
-import { audioManager } from './utils/audio';
+import { audioManager } from './audio/AudioManager';
 import { ANIMATION_CONFIG } from './config/animations';
 import { GameStateMachine } from './core/GameStateMachine';
 
 function App() {
+  const [showTitleScreen, setShowTitleScreen] = useState(true);
+
   // Initialize game state machine
   const stateMachine = useMemo(() => new GameStateMachine(), []);
   const [gameState, setGameState] = useState(stateMachine.getState());
@@ -119,8 +122,13 @@ function App() {
 
   return (
     <>
+      {/* Title Screen */}
+      {showTitleScreen && (
+        <TitleScreen onBegin={() => setShowTitleScreen(false)} />
+      )}
+
       {/* Manager Message - Shows before everything else */}
-      {gameState.showManagerMessage && (
+      {!showTitleScreen && gameState.showManagerMessage && (
         <ManagerMessage
           onDismiss={handleDismissMessage}
           onAudioInit={handleAudioInit}
@@ -134,7 +142,7 @@ function App() {
         }}
       >
       {/* Phase 1: Board */}
-      {gameState.phase === 'board' && !gameState.showManagerMessage && (
+      {!showTitleScreen && gameState.phase === 'board' && !gameState.showManagerMessage && (
         <TaskBoard onTaskMovedToInProgress={handleTaskMovedToInProgress} />
       )}
 

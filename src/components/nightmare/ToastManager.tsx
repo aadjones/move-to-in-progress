@@ -55,15 +55,41 @@ export const ToastManager = ({
   }, [active, messages, spawnInterval, toastDuration, onToastAppear]);
 
   return (
-    <div className="fixed top-4 right-4 space-y-2 z-[60] max-w-sm">
+    <div className="fixed top-4 right-4 space-y-2 z-[60] max-w-sm pointer-events-none">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="bg-white rounded-lg shadow-lg p-4 animate-slide-in border-l-4 border-blue-500"
+          className="bg-white rounded-lg shadow-lg p-4 animate-slide-in-fade border-l-4 border-blue-500 pointer-events-auto"
+          style={{
+            animation: `slideInFade 0.3s ease-out, fadeOut 0.5s ease-in ${(toastDuration - 500) / 1000}s forwards`,
+          }}
         >
           <p className="text-sm text-gray-800">{toast.message}</p>
         </div>
       ))}
+
+      <style>{`
+        @keyframes slideInFade {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+        }
+      `}</style>
     </div>
   );
 };

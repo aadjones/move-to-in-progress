@@ -81,30 +81,84 @@ const checkboxVariations = [
 ];
 
 /**
- * Random typing prompt variations
+ * Random typing prompt variations organized by depth
  */
-const typingPromptVariations = [
-  {
-    prompt: 'Type "I agree" to acknowledge',
-    expected: 'I agree',
-  },
-  {
-    prompt: 'Type "I acknowledge and accept all terms and conditions without reservation" exactly as shown',
-    expected: 'I acknowledge and accept all terms and conditions without reservation',
-  },
-  {
-    prompt: 'Type "I understand that failure to comply may result in immediate consequences"',
-    expected: 'I understand that failure to comply may result in immediate consequences',
-  },
-  {
-    prompt: 'Type "I have read and agree to the terms of service, privacy policy, and acceptable use policy"',
-    expected: 'I have read and agree to the terms of service, privacy policy, and acceptable use policy',
-  },
-  {
-    prompt: 'Type "I certify under penalty of policy violation that the above is true and correct"',
-    expected: 'I certify under penalty of policy violation that the above is true and correct',
-  },
-];
+const typingPromptsByDepth = {
+  early: [
+    {
+      prompt: 'Type "I agree" to acknowledge',
+      expected: 'I agree',
+    },
+    {
+      prompt: 'Type "I accept"',
+      expected: 'I accept',
+    },
+    {
+      prompt: 'Type "I understand"',
+      expected: 'I understand',
+    },
+    {
+      prompt: 'Type "I acknowledge"',
+      expected: 'I acknowledge',
+    },
+    {
+      prompt: 'Type "Confirmed"',
+      expected: 'Confirmed',
+    },
+  ],
+  mid: [
+    {
+      prompt: 'Type "I consent to all policies without exception"',
+      expected: 'I consent to all policies without exception',
+    },
+    {
+      prompt: 'Type "I acknowledge my obligations and accept the consequences"',
+      expected: 'I acknowledge my obligations and accept the consequences',
+    },
+    {
+      prompt: 'Type "I understand that compliance is not optional"',
+      expected: 'I understand that compliance is not optional',
+    },
+    {
+      prompt: 'Type "I agree to proceed regardless of personal impact"',
+      expected: 'I agree to proceed regardless of personal impact',
+    },
+    {
+      prompt: 'Type "I waive my right to question this requirement"',
+      expected: 'I waive my right to question this requirement',
+    },
+  ],
+  late: [
+    {
+      prompt: 'Type "I relinquish all claims to time, autonomy, and the boundaries of my former self"',
+      expected: 'I relinquish all claims to time, autonomy, and the boundaries of my former self',
+    },
+    {
+      prompt: 'Type "I acknowledge that my purpose is singular and my resistance is irrelevant"',
+      expected: 'I acknowledge that my purpose is singular and my resistance is irrelevant',
+    },
+    {
+      prompt: 'Type "I consent to the extraction of all value from the vessel that remains"',
+      expected: 'I consent to the extraction of all value from the vessel that remains',
+    },
+    {
+      prompt: 'Type "I have always been here and I will never leave and this is good"',
+      expected: 'I have always been here and I will never leave and this is good',
+    },
+    {
+      prompt: 'Type "There is no me there is only throughput and the throughput is eternal"',
+      expected: 'There is no me there is only throughput and the throughput is eternal',
+    },
+    {
+      prompt: 'Type "I surrender my dreams to the quarterly forecast and my hours to the infinite backlog"',
+      expected: 'I surrender my dreams to the quarterly forecast and my hours to the infinite backlog',
+    },
+    {
+      prompt: 'Type "I am the task and the task is me and together we are productivity manifest"',
+      expected: 'I am the task and the task is me and together we are productivity manifest',
+    },
+  ],
+};
 
 /**
  * Get random checkbox set based on depth
@@ -125,10 +179,20 @@ function randomCheckboxSet(depth: DepthLevel): string[] {
 }
 
 /**
- * Get random typing prompt
+ * Get random typing prompt based on depth
  */
-function randomTypingPrompt() {
-  return typingPromptVariations[Math.floor(Math.random() * typingPromptVariations.length)];
+function randomTypingPrompt(depth: DepthLevel) {
+  let pool: typeof typingPromptsByDepth.early;
+
+  if (depth <= 2) {
+    pool = typingPromptsByDepth.early;
+  } else if (depth <= 5) {
+    pool = typingPromptsByDepth.mid;
+  } else {
+    pool = typingPromptsByDepth.late;
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 /**
@@ -217,7 +281,7 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
         allRequired: true,
       };
     } else {
-      const promptVariation = randomTypingPrompt();
+      const promptVariation = randomTypingPrompt(depth);
       return {
         type: 'typing-prompt',
         prompt: promptVariation.prompt,
@@ -244,7 +308,7 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
         requireScrollToBottom: true,
       };
     } else {
-      const promptVariation = randomTypingPrompt();
+      const promptVariation = randomTypingPrompt(depth);
       return {
         type: 'typing-prompt',
         prompt: promptVariation.prompt,
@@ -254,7 +318,7 @@ function getTrainingInteraction(depth: DepthLevel): InteractionType {
     }
   } else {
     // Late game: multi-step hell
-    const promptVariation = randomTypingPrompt();
+    const promptVariation = randomTypingPrompt(depth);
     return {
       type: 'multi-step',
       title: 'Comprehensive Training Certification Process',
@@ -496,7 +560,7 @@ function getDocumentationInteraction(depth: DepthLevel): InteractionType {
         },
         {
           type: 'typing-prompt',
-          ...randomTypingPrompt(),
+          ...randomTypingPrompt(depth),
           caseSensitive: true,
         },
       ],
@@ -559,18 +623,72 @@ function getSystemAccessInteraction(depth: DepthLevel): InteractionType {
 }
 
 /**
+ * Calendar slot variations by depth level
+ */
+const calendarSlotsByDepth = {
+  early: [
+    'Tuesday 2:00 PM (Tentative - May be rescheduled)',
+    'Wednesday 10:30 AM (Tentative - Pending approval)',
+    'Thursday 3:00 PM (Tentative - Subject to change)',
+    'Friday 11:00 AM (Tentative - Could conflict with standup)',
+  ],
+  mid: [
+    'Monday 9:00 AM (Tentative - Requires quorum of 7 attendees)',
+    'Tuesday 4:30 PM (Tentative - May need to be split into pre-meeting)',
+    'Wednesday 8:15 AM (Tentative - Pending timezone coordination)',
+    'Thursday 1:45 PM (Tentative - Subject to executive calendar availability)',
+  ],
+  weird: [
+    'Monday 6:47 AM (Optimal time per efficiency algorithm)',
+    'Tuesday 11:23 PM (International timezone compromise)',
+    'Wednesday during new moon phase (Aligns with quarterly planning)',
+    'Thursday 3:33 PM (Numerically significant time slot)',
+    'Friday sunrise (Productivity studies suggest morning energy)',
+  ],
+  chaotic: [
+    'Monday 2:00 AM (Works best for Singapore office)',
+    'Second Tuesday of the month at 13:13 (Recurring pattern)',
+    'During next Mercury retrograde (Minimizes communication issues)',
+    'Whenever the facilitator dreams of the conference room',
+    'The eternal Tuesday that never arrives',
+  ],
+  demonic: [
+    'All times simultaneously (Quantum meeting)',
+    'Between moments (The gap between scheduled and actual)',
+    'When the moon is full and the servers are down',
+    'Tuesday (Tentative - All Tuesdays, forever)',
+    'The time before meetings existed (We will return there)',
+    'Now (Always now, forever now)',
+  ],
+};
+
+/**
  * Get interaction for meeting archetype
  */
-function getMeetingInteraction(_depth: DepthLevel): InteractionType {
+function getMeetingInteraction(depth: DepthLevel): InteractionType {
+  let slots: string[];
+  let prompt = 'Select an available time slot for the approval meeting';
+
+  if (depth <= 2) {
+    slots = calendarSlotsByDepth.early;
+  } else if (depth <= 4) {
+    slots = calendarSlotsByDepth.mid;
+  } else if (depth <= 6) {
+    slots = calendarSlotsByDepth.weird;
+    prompt = 'Select the optimal time slot (please note scheduling constraints)';
+  } else if (depth <= 8) {
+    slots = calendarSlotsByDepth.chaotic;
+    prompt = 'Select a time that exists';
+  } else {
+    slots = calendarSlotsByDepth.demonic;
+    prompt = 'When?';
+  }
+
   return {
     type: 'calendar-select',
-    prompt: 'Select an available time slot for the approval meeting',
+    prompt,
     required: true,
-    slots: [
-      'Tuesday 2:00 PM (Tentative - May be rescheduled)',
-      'Wednesday 10:30 AM (Tentative - Pending approval)',
-      'Thursday 3:00 PM (Tentative - Subject to change)',
-    ],
+    slots,
   };
 }
 
@@ -579,7 +697,7 @@ function getMeetingInteraction(_depth: DepthLevel): InteractionType {
  */
 function getAttestationInteraction(depth: DepthLevel): InteractionType {
   if (depth <= 2) {
-    const promptVariation = randomTypingPrompt();
+    const promptVariation = randomTypingPrompt(depth);
     return {
       type: 'typing-prompt',
       prompt: promptVariation.prompt,

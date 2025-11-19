@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { getEndingTier } from '../config/gameBalance';
 
 type EndingType = 'burn' | 'delegate' | 'assimilate';
 
@@ -9,12 +10,6 @@ interface GameEndingScreenProps {
   onRestart: () => void;
 }
 
-// Determine task tier based on unlocked count
-const getTaskTier = (count: number): 'low' | 'medium' | 'high' => {
-  if (count < 40) return 'low';
-  if (count < 50) return 'medium';
-  return 'high';
-};
 
 // Epilogue content - 9 variants total (3 endings × 3 tiers)
 const EPILOGUES: Record<EndingType, Record<'low' | 'medium' | 'high', string>> = {
@@ -99,24 +94,19 @@ export const GameEndingScreen = ({
 }: GameEndingScreenProps) => {
   const [showCredits, setShowCredits] = useState(false);
 
-  const tier = getTaskTier(tasksUnlocked);
+  const tier = getEndingTier(tasksUnlocked);
   const epilogue = EPILOGUES[endingType][tier];
 
-  useEffect(() => {
-    // Show credits after 8 seconds
-    const timer = setTimeout(() => {
-      setShowCredits(true);
-    }, 8000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const handleContinue = () => {
+    setShowCredits(true);
+  };
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center overflow-y-auto">
       <div className="max-w-2xl w-full p-8">
         {!showCredits ? (
           // Epilogue
-          <div className="space-y-6 animate-fadeIn">
+          <div className="space-y-8 animate-fadeIn">
             <div className="text-gray-400 text-sm uppercase tracking-wider text-center">
               {endingType === 'burn' && 'Ending: Scorched Earth'}
               {endingType === 'delegate' && 'Ending: The Delegate'}
@@ -125,6 +115,15 @@ export const GameEndingScreen = ({
 
             <div className="text-gray-300 text-base leading-relaxed whitespace-pre-line">
               {epilogue}
+            </div>
+
+            <div className="flex justify-center pt-6">
+              <button
+                onClick={handleContinue}
+                className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors border border-gray-700"
+              >
+                Continue
+              </button>
             </div>
           </div>
         ) : (

@@ -6,8 +6,7 @@
 
 import { getStageNumber } from './useStageProgression';
 import type { TaskManager } from '../taskGraph/TaskManager';
-
-type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'ending';
+import type { GameStage } from './useStageProgression';
 type GameEndingType = 'burn' | 'delegate' | 'assimilate';
 
 interface EscapeHatchHandlers {
