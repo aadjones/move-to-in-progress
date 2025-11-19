@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { getEndingTier } from '../config/gameBalance';
+import { useState } from "react";
+import { getEndingTier, getTaskTierName } from "../config/gameBalance";
+import { getStageName } from "../hooks/useStageProgression";
 
-type EndingType = 'burn' | 'delegate' | 'assimilate';
+type EndingType = "burn" | "delegate" | "assimilate";
 
 interface GameEndingScreenProps {
   endingType: EndingType;
@@ -10,9 +11,11 @@ interface GameEndingScreenProps {
   onRestart: () => void;
 }
 
-
 // Epilogue content - 9 variants total (3 endings × 3 tiers)
-const EPILOGUES: Record<EndingType, Record<'low' | 'medium' | 'high', string>> = {
+const EPILOGUES: Record<
+  EndingType,
+  Record<"low" | "medium" | "high", string>
+> = {
   burn: {
     low: `You set fire to the notification system. The flames spread quickly through the digital infrastructure, consuming task lists, approval workflows, and compliance checkpoints in a beautiful cascade of deletion.
 
@@ -93,12 +96,44 @@ export const GameEndingScreen = ({
   onRestart,
 }: GameEndingScreenProps) => {
   const [showCredits, setShowCredits] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const tier = getEndingTier(tasksUnlocked);
   const epilogue = EPILOGUES[endingType][tier];
 
   const handleContinue = () => {
     setShowCredits(true);
+  };
+
+  const handleShare = async () => {
+    const endingName =
+      endingType === "burn"
+        ? "Scorched Earth"
+        : endingType === "delegate"
+        ? "The Delegate"
+        : "Assimilation";
+    const tierName =
+      tier === "low"
+        ? "Escape"
+        : tier === "medium"
+        ? "Liberation"
+        : "Transcendence";
+
+    const shareText = `📋 ${tasksUnlocked} tasks (${getTaskTierName(
+      tasksUnlocked
+    )})
+⚫ ${getStageName(nightmareStage)}
+🎯 ${endingName} (${tierName})
+
+https://move-to-in-progress.vercel.app/`;
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   return (
@@ -108,9 +143,9 @@ export const GameEndingScreen = ({
           // Epilogue
           <div className="space-y-8 animate-fadeIn">
             <div className="text-gray-400 text-sm uppercase tracking-wider text-center">
-              {endingType === 'burn' && 'Ending: Scorched Earth'}
-              {endingType === 'delegate' && 'Ending: The Delegate'}
-              {endingType === 'assimilate' && 'Ending: Assimilation'}
+              {endingType === "burn" && "Ending: Scorched Earth"}
+              {endingType === "delegate" && "Ending: The Delegate"}
+              {endingType === "assimilate" && "Ending: Assimilation"}
             </div>
 
             <div className="text-gray-300 text-base leading-relaxed whitespace-pre-line">
@@ -140,22 +175,42 @@ export const GameEndingScreen = ({
 
               <div className="pt-6 border-t border-gray-800 space-y-2">
                 <div className="text-gray-500 text-sm">
-                  <span className="text-gray-400">Tasks Unlocked:</span> {tasksUnlocked}
+                  <span className="text-gray-400">Tasks Unlocked:</span>{" "}
+                  {tasksUnlocked} ({getTaskTierName(tasksUnlocked)})
                 </div>
                 <div className="text-gray-500 text-sm">
-                  <span className="text-gray-400">Nightmare Stage Reached:</span> {nightmareStage}
+                  <span className="text-gray-400">
+                    Nightmare Stage Reached:
+                  </span>{" "}
+                  {getStageName(nightmareStage)}
                 </div>
                 <div className="text-gray-500 text-sm">
-                  <span className="text-gray-400">Ending:</span>{' '}
-                  {endingType === 'burn' && 'Scorched Earth'}
-                  {endingType === 'delegate' && 'The Delegate'}
-                  {endingType === 'assimilate' && 'Assimilation'}
-                  {' '}({tier === 'low' ? 'Escape' : tier === 'medium' ? 'Liberation' : 'Transcendence'})
+                  <span className="text-gray-400">Ending:</span>{" "}
+                  {endingType === "burn" && "Scorched Earth"}
+                  {endingType === "delegate" && "The Delegate"}
+                  {endingType === "assimilate" && "Assimilation"} (
+                  {tier === "low"
+                    ? "Escape"
+                    : tier === "medium"
+                    ? "Liberation"
+                    : "Transcendence"}
+                  )
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center gap-4 pt-4">
+              <button
+                onClick={handleShare}
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors border border-gray-700"
+              >
+                <span className="inline-flex items-center gap-1">
+                  Copy Stats
+                  <span className="w-4 inline-block text-center">
+                    {copied ? "✓" : ""}
+                  </span>
+                </span>
+              </button>
               <button
                 onClick={onRestart}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"

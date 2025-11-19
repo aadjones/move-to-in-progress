@@ -445,6 +445,61 @@ function getApprovalRequestInteraction(depth: DepthLevel): InteractionType {
       vagueValidation: true,
     };
   } else {
+    // Level 7+: Dropdown Inception - proliferating options
+    const divisions = ['North America', 'EMEA', 'APAC', 'LATAM', 'Global Operations'];
+
+    const departments = [
+      'Customer Success', 'Sales Operations', 'Finance', 'HR', 'Legal',
+      'Marketing', 'Product Management', 'Engineering', 'IT', 'Operations',
+      'Strategy', 'Business Development'
+    ];
+
+    // Generate 25+ sub-departments with increasingly specific names
+    const subDepartments = [];
+    const regions = ['North', 'South', 'East', 'West', 'Central'];
+    const focuses = ['Enterprise', 'SMB', 'Government', 'Education', 'Healthcare'];
+    const sectors = ['Technology', 'Finance', 'Retail', 'Manufacturing', 'Services'];
+
+    for (const region of regions.slice(0, 3)) {
+      for (const focus of focuses.slice(0, 3)) {
+        for (const sector of sectors.slice(0, 3)) {
+          subDepartments.push(`${region} ${focus} ${sector}`);
+        }
+      }
+    }
+
+    // Generate 50+ approval levels with nearly identical titles
+    const approvalLevels = [];
+    const titles = [
+      'Associate Deputy Vice Director',
+      'Deputy Associate Vice Director',
+      'Vice Deputy Associate Director',
+      'Acting Deputy Vice Director',
+      'Interim Associate Vice Director',
+      'Senior Deputy Vice Director',
+      'Principal Associate Vice Director',
+      'Lead Deputy Vice Director'
+    ];
+
+    for (const title of titles) {
+      for (const dept of ['Customer Success', 'Sales', 'Operations', 'Strategy', 'Finance']) {
+        for (const region of ['North American', 'European', 'APAC']) {
+          approvalLevels.push(`${title} of ${region} ${dept}`);
+        }
+      }
+    }
+
+    // Add variations for extra confusion
+    const baseCount = approvalLevels.length;
+    for (let i = 0; i < Math.min(20, baseCount); i++) {
+      approvalLevels.push(`${approvalLevels[i]} (Interim)`);
+      approvalLevels.push(`${approvalLevels[i]} (Acting)`);
+      if (i < 10) {
+        approvalLevels.push(`${approvalLevels[i]} (Revised)`);
+        approvalLevels.push(`${approvalLevels[i]} (Final)`);
+      }
+    }
+
     return {
       type: 'dropdown-hierarchy',
       prompt: 'Select the appropriate approval chain',
@@ -452,21 +507,23 @@ function getApprovalRequestInteraction(depth: DepthLevel): InteractionType {
       hierarchy: [
         {
           label: 'Division',
-          options: ['North America', 'EMEA', 'APAC', 'LATAM'],
+          options: divisions,
         },
         {
           label: 'Department',
-          options: ['Engineering', 'Product', 'Operations', 'Sales', 'Marketing'],
+          options: departments,
         },
         {
           label: 'Sub-Department',
-          options: ['Team A', 'Team B', 'Team C', 'Cross-Functional'],
+          options: subDepartments,
         },
         {
           label: 'Approval Level',
-          options: ['Manager', 'Director', 'VP', 'SVP', 'C-Level'],
+          options: approvalLevels,
         },
       ],
+      // Enable inception mode for level 7+
+      inceptionMode: depth >= 7,
     };
   }
 }

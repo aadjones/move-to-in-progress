@@ -7,7 +7,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { CHAOS_THRESHOLDS } from '../config/gameConfig';
 
-export type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'breakdown' | 'annihilation' | 'ending';
+export type GameStage = 'initial' | 'started' | 'blockers-revealed' | 'resolving' | 'multiplying' | 'mutating' | 'automation' | 'chaos' | 'breakdown' | 'annihilation' | 'singularity' | 'ending';
 
 /**
  * Hook to automatically progress through game stages based on task count and time in chaos
@@ -21,11 +21,21 @@ export const useStageProgression = (totalTasks: number): GameStage => {
   useEffect(() => {
     // Task-based stage progression
     // Don't override timer-based stages (breakdown, annihilation)
+    // But allow singularity since it's task-count based
     if (stage === 'breakdown' || stage === 'annihilation') {
+      // Still check for singularity transition even from these stages
+      if (totalTasks >= CHAOS_THRESHOLDS.STAGE_10_SINGULARITY) {
+        setStage('singularity');
+      }
       return;
     }
 
-    if (totalTasks >= CHAOS_THRESHOLDS.STAGE_7_CHAOS) {
+    if (totalTasks >= CHAOS_THRESHOLDS.STAGE_10_SINGULARITY) {
+      // Enter singularity stage - notification explosion
+      if (stage !== 'singularity') {
+        setStage('singularity');
+      }
+    } else if (totalTasks >= CHAOS_THRESHOLDS.STAGE_7_CHAOS) {
       // Enter chaos stage
       if (stage !== 'chaos') {
         setStage('chaos');
@@ -99,13 +109,33 @@ export const useStageProgression = (totalTasks: number): GameStage => {
  * Helper to get numeric stage number
  */
 export const getStageNumber = (stage: GameStage): number => {
-  if (stage === 'annihilation') return 9;
-  if (stage === 'breakdown') return 8;
-  if (stage === 'chaos') return 7;
-  if (stage === 'automation') return 6;
-  if (stage === 'mutating') return 5;
-  if (stage === 'multiplying') return 4;
-  if (stage === 'resolving') return 3;
-  if (stage === 'started') return 2;
-  return 1;
+  if (stage === 'singularity') return 9;
+  if (stage === 'annihilation') return 8;
+  if (stage === 'breakdown') return 7;
+  if (stage === 'chaos') return 6;
+  if (stage === 'automation') return 5;
+  if (stage === 'mutating') return 4;
+  if (stage === 'multiplying') return 3;
+  if (stage === 'resolving') return 2;
+  if (stage === 'started') return 1;
+  return 0;
+};
+
+/**
+ * Helper to get stage name (Dante's Inferno meets corporate hell)
+ */
+export const getStageName = (stageNumber: number): string => {
+  switch (stageNumber) {
+    case 0: return 'Vestibule (Innocence)';
+    case 1: return 'First Circle (Limbo)';
+    case 2: return 'Second Circle (The Blockers)';
+    case 3: return 'Third Circle (Multiplication)';
+    case 4: return 'Fourth Circle (Mutation)';
+    case 5: return 'Fifth Circle (The Automated)';
+    case 6: return 'Sixth Circle (Full Chaos)';
+    case 7: return 'Seventh Circle (Breakdown)';
+    case 8: return 'Eighth Circle (Annihilation)';
+    case 9: return 'Ninth Circle (Singularity)';
+    default: return 'Unknown';
+  }
 };
