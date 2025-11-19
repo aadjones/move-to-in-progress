@@ -135,6 +135,8 @@ export type InteractionType =
       }[];
       /** Final selection required */
       required: true;
+      /** Enable inception mode - additional dropdowns appear after completion */
+      inceptionMode?: boolean;
     };
 
 /**
