@@ -7,6 +7,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* Scanline glitch effect */
@@ -113,4 +114,78 @@ body {
   50% { filter: hue-rotate(180deg) saturate(2); }
   75% { filter: hue-rotate(270deg) saturate(1.5); }
   100% { filter: hue-rotate(360deg) saturate(1); }
+}
+
+/* Enhanced scrollbar for falling phase */
+.falling-phase-scrollbar::-webkit-scrollbar {
+  width: 14px;
+}
+
+.falling-phase-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.falling-phase-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.falling-phase-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7c3aed 0%, #4f46e5 100%);
+}
+
+/* Pulsing scrollbar animation - fade in/out of color */
+@keyframes scrollbar-pulse {
+  0%, 100% {
+    background: rgba(156, 163, 175, 0.3); /* gray-400 barely visible */
+    box-shadow: none;
+  }
+  50% {
+    background: linear-gradient(180deg, #a78bfa 0%, #818cf8 100%); /* bright purple */
+    box-shadow: 0 0 30px rgba(139, 92, 246, 1), 0 0 50px rgba(139, 92, 246, 0.7);
+  }
+}
+
+.falling-phase-scrollbar.pulsing-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3); /* Start gray, let animation take over */
+  box-shadow: none; /* Clear the default shadow */
+  animation: scrollbar-pulse 1s ease-in-out 5;
+}
+
+/* Gentle glow for scrollbar */
+@keyframes scrollbar-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 30px rgba(139, 92, 246, 0.4);
+  }
+}
+
+.glowing-scrollbar::-webkit-scrollbar-thumb {
+  animation: scrollbar-glow 2s ease-in-out infinite;
+}
+
+/* Floating down animation for motion echo particles */
+@keyframes float-down {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.3;
+  }
+  80% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.animate-float-down {
+  animation: float-down 3s ease-in infinite;
 }
