@@ -83,6 +83,8 @@ function App() {
     // Ensure touch scrolling works on mobile
     document.body.style.touchAction = 'auto';
     document.body.style.overflowY = 'auto';
+    // Add purple scrollbar styling
+    document.body.classList.add('falling-phase-scrollbar');
     stateMachine.dispatch({
       type: 'TASK_MOVED_TO_IN_PROGRESS',
       payload: { position, width },
@@ -115,6 +117,7 @@ function App() {
   const handleRestart = () => {
     document.body.style.overflow = 'auto';
     document.body.style.minHeight = 'auto';
+    document.body.classList.remove('falling-phase-scrollbar');
     window.scrollTo(0, 0);
     stateMachine.dispatch({ type: 'RESTART' });
   };
